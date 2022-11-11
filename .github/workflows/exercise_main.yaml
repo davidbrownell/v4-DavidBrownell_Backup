@@ -15,21 +15,21 @@
 # ----------------------------------------------------------------------
 on:
     workflow_call:
-    inputs:
-      setup_branch_overrides:
-        type: string
-        required: false
-        description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
+      inputs:
+        setup_branch_overrides:
+          type: string
+          required: false
+          description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
 
-      subject_repo_name:
-        type: string
-        required: false
-        description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
+        subject_repo_name:
+          type: string
+          required: false
+          description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
 
-      subject_repo_branch:
-        type: string
-        required: false
-        description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
+        subject_repo_branch:
+          type: string
+          required: false
+          description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
 
 jobs:
   _2fd39e81-41e2-443b-9141-48e61bb53de2_dev:
