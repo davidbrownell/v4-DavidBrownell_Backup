@@ -1,0 +1,25 @@
+# ----------------------------------------------------------------------
+# |
+# |  build_and_test.yaml
+# |
+# |  David Brownell <db@DavidBrownell.com>
+# |      2022-11-11 08:48:36
+# |
+# ----------------------------------------------------------------------
+# |
+# |  Copyright David Brownell 2022
+# |  Distributed under the Boost Software License, Version 1.0. See
+# |  accompanying file LICENSE_1_0.txt or copy at
+# |  http://www.boost.org/LICENSE_1_0.txt.
+# |
+# ----------------------------------------------------------------------
+name: "Build and Test"
+run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  _3708d875-b4c1-4265-89d0-93553e16c0c3:
+    name: "Build and Test"
+    uses: ./.github/workflows/exercise_main.yaml

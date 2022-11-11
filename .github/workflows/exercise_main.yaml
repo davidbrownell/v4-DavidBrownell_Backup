@@ -1,0 +1,108 @@
+# ----------------------------------------------------------------------
+# |
+# |  exercise_main.yaml
+# |
+# |  David Brownell <db@DavidBrownell.com>
+# |      2022-11-11 08:49:57
+# |
+# ----------------------------------------------------------------------
+# |
+# |  Copyright David Brownell 2022
+# |  Distributed under the Boost Software License, Version 1.0. See
+# |  accompanying file LICENSE_1_0.txt or copy at
+# |  http://www.boost.org/LICENSE_1_0.txt.
+# |
+# ----------------------------------------------------------------------
+on:
+    workflow_call:
+    inputs:
+      setup_branch_overrides:
+        type: string
+        required: false
+        description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
+
+      subject_repo_name:
+        type: string
+        required: false
+        description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
+
+      subject_repo_branch:
+        type: string
+        required: false
+        description: "See https://github.com/davidbrownell/v4-Common_Foundation/.github/src/_BuildAndTest.template.yaml"
+
+jobs:
+  _2fd39e81-41e2-443b-9141-48e61bb53de2_dev:
+    name: "DavidBrownell_Backup (dev)"
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/exercise_main-Impl.yaml@CI-v1.1.0
+
+    with:
+      setup_branch_overrides:               ${{ inputs.setup_branch_overrides }}
+      subject_repo_name:                    ${{ inputs.subject_repo_name }}
+      subject_repo_branch:                  ${{ inputs.subject_repo_branch }}
+
+      os:                                   ${{ matrix.os }}
+      configuration:                        dev
+
+      run_Builder:                          true
+      run_PylintVerifier:                   true
+
+      # Use the following values to control how different test types are run:
+      #
+      #   0: Do not run these test types
+      #   1: Run these test types without code coverage
+      #   2: Run these test types with code coverage
+      #   3: Run these test types with and without code coverage
+
+      execute_UnitTests:                    3
+      execute_FunctionalTests:              1
+      execute_IntegrationTests:             1
+      execute_SystemTests:                  1
+      execute_LocalEndToEndTests:           1
+      execute_EndToEndTests:                0
+      execute_BuildVerificationTests:       0
+      execute_PerformanceTests:             0
+
+  _2fd39e81-41e2-443b-9141-48e61bb53de2_standard:
+    name: "DavidBrownell_Backup (standard)"
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/exercise_main-Impl.yaml@CI-v1.1.0
+
+    with:
+      setup_branch_overrides:               ${{ inputs.setup_branch_overrides }}
+      subject_repo_name:                    ${{ inputs.subject_repo_name }}
+      subject_repo_branch:                  ${{ inputs.subject_repo_branch }}
+
+      os:                                   ${{ matrix.os }}
+      configuration:                        standard
+
+      run_Builder:                          true
+
+      # Use the following values to control how different test types are run:
+      #
+      #   0: Do not run these test types
+      #   1: Run these test types without code coverage
+      #   2: Run these test types with code coverage
+      #   3: Run these test types with and without code coverage
+
+      execute_UnitTests:                    3
+      execute_FunctionalTests:              1
+      execute_IntegrationTests:             1
+      execute_SystemTests:                  1
+      execute_LocalEndToEndTests:           1
+      execute_EndToEndTests:                0
+      execute_BuildVerificationTests:       0
+      execute_PerformanceTests:             0

@@ -1,0 +1,27 @@
+# ----------------------------------------------------------------------
+# |
+# |  on_pr_to_main.yaml
+# |
+# |  David Brownell <db@DavidBrownell.com>
+# |      2022-11-11 08:48:45
+# |
+# ----------------------------------------------------------------------
+# |
+# |  Copyright David Brownell 2022
+# |  Distributed under the Boost Software License, Version 1.0. See
+# |  accompanying file LICENSE_1_0.txt or copy at
+# |  http://www.boost.org/LICENSE_1_0.txt.
+# |
+# ----------------------------------------------------------------------
+name: "OnPullRequest (main)"
+run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name }}
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  _1fbc5ab1-736c-468f-b711-b825c52d87c8:
+    name: "branch: ${{ github.base_ref }}"
+    uses: ./.github/workflows/exercise_main.yaml
