@@ -1,0 +1,7 @@
+{
+    "exclude": [
+        "**/*Tests/*",
+        "**/Generated/*",
+        "Tools/*"
+    ]
+}

@@ -1,0 +1,29 @@
+# ----------------------------------------------------------------------
+Activate.cmd
+Activate[.-]*.cmd
+Activate.sh
+Activate[.-]*.sh
+
+Deactivate.cmd
+Deactivate[.-]*.cmd
+Deactivate.sh
+Deactivate[.-]*.sh
+
+Setup[.-]*.cmd
+Setup[.-]*.sh
+
+# ----------------------------------------------------------------------
+Generated/**
+
+.pytest_cache/**
+__pycache__/**
+*.pyc
+*.pyo
+
+.coverage
+coverage.xml
+
+.vscode/*
+test_localsystem.txt
+
+# ----------------------------------------------------------------------

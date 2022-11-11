@@ -1,0 +1,10 @@
+This file is used to uniquely identify this repository for the purposes of dependency management.
+Other repositories that depend on this one will search for this file upon initial setup and
+generate information that is used when activating development environments.
+
+**** PLEASE DO NOT MODIFY, REMOVE, OR RENAME THIS FILE, AS DOING SO WILL LIKELY BREAK OTHER REPOSITORIES! ****
+
+Friendly Name:      DavidBrownell_Backup
+Id:                 4f02d3b1-bc53-4288-a759-58f9b7b7051f
+
+Version 4.0.0
