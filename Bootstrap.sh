@@ -39,7 +39,7 @@ fi
 
 if [[ ${should_continue} == 1 && ${DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_KEY} ]]; then
     echo ""
-    echo "[31m[1mERROR:[0m ERROR: Please run this script for a standard ^(non-activated^) command prompt."
+    echo "[31m[1mERROR:[0m ERROR: Please run this script for a standard (non-activated) command prompt."
     echo "[31m[1mERROR:[0m"
     echo ""
 
@@ -110,7 +110,7 @@ if [[ ${should_continue} == 1 ]]; then
         echo ""
 
         pushd "$1/Common/Foundation" > /dev/null
-        git pull
+        git fetch origin main_stable
         popd > /dev/null
 
         echo ""

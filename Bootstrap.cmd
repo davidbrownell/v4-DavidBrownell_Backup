@@ -129,6 +129,7 @@ if not exist "%_COMMON_CODE_ABSOLUTE_DIR%\Common\Foundation" (
     pushd "%_COMMON_CODE_ABSOLUTE_DIR%\Common\Foundation.tmp"
 
     git checkout tags/main_stable
+
     if %ERRORLEVEL% NEQ 0 (
         popd
         set _ERRORLEVEL=%ERRORLEVEL%
@@ -155,7 +156,15 @@ echo Updating Common_Foundation...
 echo.
 
 pushd "%_COMMON_CODE_ABSOLUTE_DIR%\Common\Foundation"
-git pull
+
+git fetch origin main_stable
+
+if %ERRORLEVEL% NEQ 0 (
+    popd
+    set _ERRORLEVEL=%ERRORLEVEL%
+    goto Exit
+)
+
 popd
 
 echo.
