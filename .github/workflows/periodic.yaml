@@ -1,0 +1,27 @@
+# ----------------------------------------------------------------------
+# |
+# |  periodic.yaml
+# |
+# |  David Brownell <db@DavidBrownell.com>
+# |      2022-11-16 07:58:25
+# |
+# ----------------------------------------------------------------------
+# |
+# |  Copyright David Brownell 2022
+# |  Distributed under the Boost Software License, Version 1.0. See
+# |  accompanying file LICENSE_1_0.txt or copy at
+# |  http://www.boost.org/LICENSE_1_0.txt.
+# |
+# ----------------------------------------------------------------------
+name: Periodic
+run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * *' # Once a day at 9am UTC
+
+jobs:
+  _d13b0c0e-6a87-4583-8fec-a2e1a1dd1eb6:
+    name: "Build and Test"
+    uses: ./.github/workflows/exercise_main.yaml
