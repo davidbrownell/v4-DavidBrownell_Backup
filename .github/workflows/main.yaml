@@ -38,7 +38,7 @@ jobs:
     needs:
       - _a3fa3751-1863-4670-a89c-3e60a602ac0f
 
-    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_create_stable_tag.yaml@CI-v1.2.0
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_create_stable_tag.yaml@CI-v1
     with:
       branch: ${{ github.ref_name }}
       commit: ${{ github.sha }}
