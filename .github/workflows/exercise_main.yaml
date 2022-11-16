@@ -41,7 +41,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
 
-    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/exercise_main-Impl.yaml@CI-v1.2.0
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/exercise_main-Impl.yaml@CI-v1
 
     with:
       bootstrap_branch_overrides:           ${{ inputs.bootstrap_branch_overrides }}
@@ -79,12 +79,12 @@ jobs:
           - ubuntu-latest
           - windows-latest
 
-    uses: davidbrownell/v4-Common_Foundation/.github/workflows/exercise_main-Impl.yaml@CI-v1.2.0
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/exercise_main-Impl.yaml@CI-v1
 
     with:
-      bootstrap_branch_overrides:               ${{ inputs.bootstrap_branch_overrides }}
-      repo_name:                    ${{ inputs.repo_name }}
-      repo_branch:                  ${{ inputs.repo_branch }}
+      bootstrap_branch_overrides:           ${{ inputs.bootstrap_branch_overrides }}
+      repo_name:                            ${{ inputs.repo_name }}
+      repo_branch:                          ${{ inputs.repo_branch }}
 
       os:                                   ${{ matrix.os }}
       configuration:                        standard
