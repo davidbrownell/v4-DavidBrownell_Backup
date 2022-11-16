@@ -26,7 +26,7 @@ jobs:
   _a3fa3751-1863-4670-a89c-3e60a602ac0f:
     name: "DavidBrownell_Backup"
 
-    uses: ./.github/workflows/exercise_main.yaml
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/exercise_main.yaml@CI-latest
     with:
       repo_name: "davidbrownell/v4-DavidBrownell_Backup"
       repo_branch: "${{ github.ref_name }}"

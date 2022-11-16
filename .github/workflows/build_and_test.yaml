@@ -22,4 +22,4 @@ on:
 jobs:
   _3708d875-b4c1-4265-89d0-93553e16c0c3:
     name: "Build and Test"
-    uses: ./.github/workflows/exercise_main.yaml
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/exercise_main.yaml@CI-latest

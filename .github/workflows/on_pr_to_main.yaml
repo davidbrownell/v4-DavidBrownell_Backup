@@ -24,4 +24,4 @@ on:
 jobs:
   _1fbc5ab1-736c-468f-b711-b825c52d87c8:
     name: "branch: ${{ github.base_ref }}"
-    uses: ./.github/workflows/exercise_main.yaml
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/exercise_main.yaml@CI-latest
