@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------
 # |
-# |  on_pr_to_main.yaml
+# |  event_on_push.yaml
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2022-11-11 08:48:45
+# |      2022-11-17 10:07:27
 # |
 # ----------------------------------------------------------------------
 # |
@@ -13,15 +13,24 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-name: "OnPullRequest (main)"
+name: "on push"
 run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name }}
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
 jobs:
-  _1fbc5ab1-736c-468f-b711-b825c52d87c8:
-    name: "branch: ${{ github.base_ref }}"
-    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/exercise_main.yaml@CI-latest
+  _545be203-55eb-4d41-bd97-43da41be2841:
+    name: "Validate"
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/callable_validate_with_dependencies.yaml@CI-latest
+    with:
+      repo_branch:                          ${{ github.ref_name }}
+
+  _768182e2-18ef-4a0b-9c45-1a0bf54d49a1:
+    name: "Promote"
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_promote_impl.yaml@CI-v1
+
+    needs:
+      - _545be203-55eb-4d41-bd97-43da41be2841
