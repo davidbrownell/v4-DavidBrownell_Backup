@@ -24,13 +24,13 @@ on:
 jobs:
   _545be203-55eb-4d41-bd97-43da41be2841:
     name: "Validate"
-    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/callable_validate_with_dependencies.yaml@CI-latest
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate_with_dependencies.yaml@CI-latest
     with:
       repo_branch:                          ${{ github.ref_name }}
 
   _768182e2-18ef-4a0b-9c45-1a0bf54d49a1:
     name: "Promote"
-    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_promote_impl.yaml@CI-v1
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_promote.yaml@CI-v1
 
     needs:
       - _545be203-55eb-4d41-bd97-43da41be2841
