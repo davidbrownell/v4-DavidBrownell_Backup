@@ -23,4 +23,4 @@ on:
 jobs:
   _3e28bda8-e0ea-480f-9a2f-e002c6220f07:
     name: "Validate"
-    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate.yaml@CI-latest
