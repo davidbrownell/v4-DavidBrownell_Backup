@@ -1,0 +1,29 @@
+# ----------------------------------------------------------------------
+# |
+# |  callable_validate_with_dependencies.yaml
+# |
+# |  David Brownell <db@DavidBrownell.com>
+# |      2022-11-17 10:14:16
+# |
+# ----------------------------------------------------------------------
+# |
+# |  Copyright David Brownell 2022
+# |  Distributed under the Boost Software License, Version 1.0. See
+# |  accompanying file LICENSE_1_0.txt or copy at
+# |  http://www.boost.org/LICENSE_1_0.txt.
+# |
+# ----------------------------------------------------------------------
+name: "[callable] Validates DavidBrownell_Backup (and its dependencies)"
+
+on:
+  workflow_call:
+    inputs:
+      repo_branch:                          {type: string, required: true}
+
+jobs:
+  _5a678e09-a1b3-4159-a83a-271a4389fe66:
+    name: "DavidBrownell_Backup"
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/callable_validate.yaml@CI-latest
+    with:
+      bootstrap_branch_overrides: "DavidBrownell_Backup:${{ inputs.repo_branch }}"
+      repo_branch: ${{ inputs.repo_branch }}

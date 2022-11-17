@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------
 # |
-# |  periodic.yaml
+# |  manual_validate.yaml
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2022-11-16 07:58:25
+# |      2022-11-17 10:16:39
 # |
 # ----------------------------------------------------------------------
 # |
@@ -13,15 +13,13 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-name: Periodic
+name: "Validate"
 run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 9 * * *' # Once a day at 9am UTC
 
 jobs:
-  _d13b0c0e-6a87-4583-8fec-a2e1a1dd1eb6:
-    name: "Build and Test"
-    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/exercise_main.yaml@CI-latest
+  _36ae5b87-cc37-467b-8aab-bfff6178f8bb:
+    name: "Validate"
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/callable_validate.yaml@CI-latest

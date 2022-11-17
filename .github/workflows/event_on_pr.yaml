@@ -1,0 +1,27 @@
+# ----------------------------------------------------------------------
+# |
+# |  event_on_pr.yaml
+# |
+# |  David Brownell <db@DavidBrownell.com>
+# |      2022-11-17 10:06:47
+# |
+# ----------------------------------------------------------------------
+# |
+# |  Copyright David Brownell 2022
+# |  Distributed under the Boost Software License, Version 1.0. See
+# |  accompanying file LICENSE_1_0.txt or copy at
+# |  http://www.boost.org/LICENSE_1_0.txt.
+# |
+# ----------------------------------------------------------------------
+name: "on pull request"
+run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name }}
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  _ee5e9719-d690-4256-adae-dd822c670556:
+    name: "Validate"
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/callable_validate.yaml@CI-latest
