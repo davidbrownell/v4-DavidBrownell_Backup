@@ -23,3 +23,5 @@ jobs:
   _36ae5b87-cc37-467b-8aab-bfff6178f8bb:
     name: "Validate"
     uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate.yaml@CI-latest
+    with:
+      repo_branch:                          ${{ github.ref_name }}
