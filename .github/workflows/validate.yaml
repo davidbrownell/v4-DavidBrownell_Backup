@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         os:
-          # TODO - macos-latest
+          - macos-latest
           - ubuntu-latest
           - windows-latest
 
