@@ -14,7 +14,7 @@
 # |
 # ----------------------------------------------------------------------
 name: "on pull request"
-run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name }}
+run-name: "${{ github.run_number }} [${{ github.actor }}] ${{ github.head_ref }} -> ${{ github.base_ref }}"
 
 on:
   pull_request:
@@ -26,4 +26,4 @@ jobs:
     name: "Validate"
     uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate.yaml@CI-latest
     with:
-      repo_branch:                          ${{ github.base_ref }}
+      repo_branch:                          ${{ github.head_ref }}
