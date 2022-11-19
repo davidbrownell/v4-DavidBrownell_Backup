@@ -25,5 +25,5 @@ jobs:
     name: "DavidBrownell_Backup"
     uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate.yaml@CI-latest
     with:
-      bootstrap_branch_overrides: "DavidBrownell_Backup:${{ inputs.repo_branch }}"
       repo_branch: ${{ inputs.repo_branch }}
+      bootstrap_branch_overrides: "DavidBrownell_Backup:${{ inputs.repo_branch }}"
