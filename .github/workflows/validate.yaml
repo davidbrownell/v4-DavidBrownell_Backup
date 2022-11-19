@@ -18,8 +18,8 @@ name: "[callable] Validates DavidBrownell_Backup"
 on:
   workflow_call:
     inputs:
+      repo_branch:                          {type: string, required: true}
       bootstrap_branch_overrides:           {type: string, required: false}
-      repo_branch:                          {type: string, required: false}
 
 jobs:
   _48a57d9f-cc51-4bef-8e87-2e5f936173c2:
