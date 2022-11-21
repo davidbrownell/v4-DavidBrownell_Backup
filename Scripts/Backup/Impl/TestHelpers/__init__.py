@@ -63,14 +63,14 @@ def GetFileSystemDestinationContentDir(
 
 # ----------------------------------------------------------------------
 def GetOutputPath(
-    destination: Path,
+    destination_content_dir: Path,
     working_dir: Path,
 ) -> Path:
     if CurrentShell.family_name == "Windows":
-        result = destination / working_dir.parts[0].replace(":", "_") / Path(*working_dir.parts[1:])
+        result = destination_content_dir / working_dir.parts[0].replace(":", "_") / Path(*working_dir.parts[1:])
     else:
         assert working_dir.parts[0] == '/', working_dir.parts
-        result = destination / Path(*working_dir.parts[1:])
+        result = destination_content_dir / Path(*working_dir.parts[1:])
 
     assert result.is_dir(), result
     return result
@@ -165,7 +165,13 @@ def ValueComparison(
             continue
 
         if compare_file_contents:
-            if this_value.path.open().read() != that_value.path.open().read():
+            with this_value.path.open("rb") as f:
+                this_contents = f.read()
+
+            with that_value.path.open("rb") as f:
+                that_contents = f.read()
+
+            if this_contents != that_contents:
                 yield this_value, that_value
 
 
