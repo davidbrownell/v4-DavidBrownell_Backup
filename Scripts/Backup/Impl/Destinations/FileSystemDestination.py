@@ -119,7 +119,6 @@ class FileSystemDestination(Destination):
                 assert diff.operation in diffs, diff.operation
                 diffs[diff.operation].append(diff)
 
-
         if not any(diff_items for diff_items in diffs.values()):
             return
 
@@ -212,8 +211,8 @@ class FileSystemDestination(Destination):
 
                     create_destination_path_func = CreateDestinationPathNotWindows
 
-                temp_commit_items: List[Optional[Path]] = []
                 temp_delete_items: List[Optional[Path]] = []
+                temp_commit_items: List[Optional[Path]] = []
 
                 # If force, decorate the original content dir to indicate that it should be removed
                 if self.force and content_dir.is_dir():
@@ -223,6 +222,74 @@ class FileSystemDestination(Destination):
 
                             shutil.move(child, dest_child)
                             temp_delete_items.append(dest_child)
+
+                # Rename removed & modified files to to-be-deleted
+                if diffs[Snapshot.DiffOperation.modify] or diffs[Snapshot.DiffOperation.remove]:
+                    with persist_dm.Nested(
+                        "Persisting removed content...",
+                        suffix="\n",
+                    ) as this_dm:
+                        with this_dm.YieldVerboseStream() as stream:
+                            if diffs[Snapshot.DiffOperation.modify]:
+                                stream.write("Modifying\n")
+                                stream.write("".join("  - {}\n".format(diff.path) for diff in diffs[Snapshot.DiffOperation.modify]))
+                                stream.write("\n")
+
+                            if diffs[Snapshot.DiffOperation.remove]:
+                                stream.write("Removing\n")
+                                stream.write("".join("  - {}\n".format(diff.path) for diff in diffs[Snapshot.DiffOperation.remove]))
+                                stream.write("\n")
+
+                        # ----------------------------------------------------------------------
+                        def Remove(
+                            context: Path,
+                            on_simple_status_func: Callable[[str], None],  # pylint: disable=unused-argument
+                        ) -> Tuple[Optional[int], ExecuteTasks.TransformStep2FuncType[Optional[Path]]]:
+
+                            source_filename = context
+
+                            dest_filename = create_destination_path_func(
+                                source_filename,
+                                self.__class__.PENDING_DELETE_EXTENSION,
+                            )
+
+                            # ----------------------------------------------------------------------
+                            def Execute(
+                                status: ExecuteTasks.Status,  # pylint: disable=unused-argument
+                            ) -> Tuple[Optional[Path], Optional[str]]:
+                                original_dest_filename = dest_filename.with_suffix("")
+
+                                if not original_dest_filename.exists():
+                                    return None, None
+
+                                shutil.move(original_dest_filename, dest_filename)
+                                return dest_filename, None
+
+                            # ----------------------------------------------------------------------
+
+                            return None, Execute
+
+                        # ----------------------------------------------------------------------
+
+                        temp_delete_items += ExecuteTasks.Transform(
+                            this_dm,
+                            "Processing",
+                            [
+                                ExecuteTasks.TaskData(Snapshot.GetTaskDisplayName(diff.path), diff.path)
+                                for diff in itertools.chain(
+                                    diffs[Snapshot.DiffOperation.modify],
+                                    diffs[Snapshot.DiffOperation.remove],
+                                )
+                            ],
+                            Remove,
+                            quiet=self.quiet,
+                            max_num_threads=1 if not self.is_ssd else None,
+                        )
+
+                        if this_dm.result != 0:
+                            return
+
+                        executed_work = True
 
                 # Move added & modified files to temp files in dest dir
                 if diffs[Snapshot.DiffOperation.add] or diffs[Snapshot.DiffOperation.modify]:
@@ -336,78 +403,10 @@ class FileSystemDestination(Destination):
 
                         executed_work = True
 
-                # Rename removed & modified files to to-be-deleted
-                if diffs[Snapshot.DiffOperation.modify] or diffs[Snapshot.DiffOperation.remove]:
-                    with persist_dm.Nested(
-                        "Persisting removed content...",
-                        suffix="\n",
-                    ) as this_dm:
-                        with this_dm.YieldVerboseStream() as stream:
-                            if diffs[Snapshot.DiffOperation.modify]:
-                                stream.write("Modifying\n")
-                                stream.write("".join("  - {}\n".format(diff.path) for diff in diffs[Snapshot.DiffOperation.modify]))
-                                stream.write("\n")
-
-                            if diffs[Snapshot.DiffOperation.remove]:
-                                stream.write("Removing\n")
-                                stream.write("".join("  - {}\n".format(diff.path) for diff in diffs[Snapshot.DiffOperation.remove]))
-                                stream.write("\n")
-
-                        # ----------------------------------------------------------------------
-                        def Remove(
-                            context: Path,
-                            on_simple_status_func: Callable[[str], None],  # pylint: disable=unused-argument
-                        ) -> Tuple[Optional[int], ExecuteTasks.TransformStep2FuncType[Optional[Path]]]:
-
-                            source_filename = context
-
-                            dest_filename = create_destination_path_func(
-                                source_filename,
-                                self.__class__.PENDING_DELETE_EXTENSION,
-                            )
-
-                            # ----------------------------------------------------------------------
-                            def Execute(
-                                status: ExecuteTasks.Status,  # pylint: disable=unused-argument
-                            ) -> Tuple[Optional[Path], Optional[str]]:
-                                original_dest_filename = dest_filename.with_suffix("")
-
-                                if not original_dest_filename.exists():
-                                    return None, None
-
-                                shutil.move(original_dest_filename, dest_filename)
-                                return dest_filename, None
-
-                            # ----------------------------------------------------------------------
-
-                            return None, Execute
-
-                        # ----------------------------------------------------------------------
-
-                        temp_delete_items += ExecuteTasks.Transform(
-                            this_dm,
-                            "Processing",
-                            [
-                                ExecuteTasks.TaskData(Snapshot.GetTaskDisplayName(diff.path), diff.path)
-                                for diff in itertools.chain(
-                                    diffs[Snapshot.DiffOperation.modify],
-                                    diffs[Snapshot.DiffOperation.remove],
-                                )
-                            ],
-                            Remove,
-                            quiet=self.quiet,
-                            max_num_threads=1 if not self.is_ssd else None,
-                        )
-
-                        if this_dm.result != 0:
-                            return
-
-                        executed_work = True
-
                 if executed_work:
                     for desc, items, func in [
-                        ("Committing removed content...", temp_delete_items, lambda fullpath: fullpath.unlink(fullpath) if fullpath.is_file() else PathEx.RemoveTree(fullpath)),
                         ("Committing added content...", temp_commit_items, lambda fullpath: shutil.move(fullpath, fullpath.with_suffix(""))),
+                        ("Committing removed content...", temp_delete_items, lambda fullpath: fullpath.unlink(fullpath) if fullpath.is_file() else PathEx.RemoveTree(fullpath)),
                     ]:
                         if any(item for item in items):
                             with persist_dm.Nested(

@@ -39,7 +39,7 @@ with ExitStack(lambda: sys.path.pop(0)):
     from Backup.Impl import TestHelpers
 
 
-# Note that this exercises based functionality; ../EndToEndTests/Mirror_EndToEndTest.py exercises
+# Note that this exercises based functionality; ../IntegrationTests/Mirror_Test.py exercises
 # backups with changes to the file system over time.
 
 # ----------------------------------------------------------------------

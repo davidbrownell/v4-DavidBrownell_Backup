@@ -313,7 +313,7 @@ class Snapshot(object):
                     )
                 else:
                     # The type has changed
-                    diffs += [
+                    diffs.append(
                         Snapshot.DiffResult(
                             Snapshot.DiffOperation.remove,
                             other.fullpath,
@@ -322,15 +322,9 @@ class Snapshot(object):
                             other.hash_value,
                             other.file_size,
                         ),
-                        Snapshot.DiffResult(
-                            Snapshot.DiffOperation.add,
-                            self.fullpath,
-                            self.hash_value,
-                            self.file_size,
-                            None,
-                            None,
-                        ),
-                    ]
+                    )
+
+                    diffs += self.CreateDiffs(None, file_compare_func)[0]
 
                 assert diffs
                 return diffs, Snapshot.DiffOperation.modify
