@@ -43,6 +43,7 @@ class FileSystemDestination(Destination):
     PENDING_COMMIT_EXTENSION                = ".__pending_commit__"
     PENDING_DELETE_EXTENSION                = ".__pending_delete__"
 
+    # ----------------------------------------------------------------------
     @staticmethod
     def GetSnapshotContentDir(
         root: Path,
