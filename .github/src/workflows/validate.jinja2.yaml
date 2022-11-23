@@ -111,26 +111,52 @@ jobs:
         if: ${{ startsWith('<<< os >>>', 'ubuntu') }}
         uses: davidbrownell/v4-Common_Foundation/.github/actions/dump_contexts@CI-v1
 
+      # outputs:
+      #   - local_script_prefix
+      #   - script_extension
+      #   - shell_name
+      #   - source_command
+      #   - sudo_command
+      #   - working_dir
+      #
       - name: "[Impl] Initialize OS-Specific Variables"
         id: initialize
         uses: davidbrownell/v4-Common_Foundation/.github/actions/initialize@CI-v1
         with:
           os:                               <<< os >>>
 
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: "[${{ github.run_number }}, v4-DavidBrownell_Backup, <<< os >>>, dev] Builder Artifacts"
-          path: "${{ steps.initialize.outputs.working_dir }}"
-
+      # outputs:
+      #   - archive_prefix
+      #   - repo_name
+      #   - repo_dir
+      #
       - name: Checkout Source
-        uses: actions/checkout@v3
+        id: checkout_source
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/checkout_source@CI-v1
         with:
-          repository: davidbrownell/v4-DavidBrownell_Backup
-          ref: ${{ inputs.repo_branch }}
+          repo_name:                        davidbrownell/v4-DavidBrownell_Backup
+          repo_branch:                      ${{ inputs.repo_branch }}
+
+          os:                               <<< os >>>
+          configuration:                    dev
+
+          shell_name:                       ${{ steps.initialize.outputs.shell_name }}
+          working_dir:                      ${{ steps.initialize.outputs.working_dir }}
+
+      - name: Unbundle Build Artifacts
+        id: unbundle
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-latest
+        with:
+          archive_prefix:                   ${{ steps.checkout_source.outputs.archive_prefix }}
+          artifacts_path:                   Scripts/Backup/Build
+
+          os:                               <<< os >>>
+
+          shell_name:                       ${{ steps.initialize.outputs.shell_name }}
+          working_dir:                      ${{ steps.initialize.outputs.working_dir }}
 
       - name: Run Test
         run: |
-          python3 Scripts/Backup/BinaryTests/Binary_BuildVerificationTest.py "${{ steps.initialize.outputs.working_dir }}"
+          python3 "${{ steps.checkout_source.outputs.repo_dir }}/Scripts/Backup/BinaryTests/Binary_BuildVerificationTest.py" "${{ steps.unbundle.outputs.artifacts_dir }}"
 
 <<% endfor %>>
