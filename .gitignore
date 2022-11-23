@@ -27,4 +27,6 @@ coverage.xml
 test_localsystem.txt
 
 # ----------------------------------------------------------------------
+.github/**/*Compiler.ConditionalInvocationQueryMixin.data
+
 .pylintrc

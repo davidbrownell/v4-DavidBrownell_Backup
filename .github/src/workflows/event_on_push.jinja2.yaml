@@ -1,21 +1,4 @@
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-#
-# This file is the result of a code generation process; any changes made
-# to this file will be overwritten during the next code generation
-# invocation. Any changes MUST be made in the source file rather than in
-# this one.
-#
-#     Code Generator:         Jinja2
-#     Input Filename:         workflows/event_on_push.jinja2.yaml
-#     Generated Date:         2022-11-23
-#
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-
-# ----------------------------------------------------------------------
 # |
 # |  event_on_push.yaml
 # |
