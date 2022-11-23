@@ -50,12 +50,12 @@ with PathEx.EnsureFile(_repo_root / "VERSION").open() as f:
 _year = datetime.datetime.now().year
 
 if _year == 2022:
-    _year_suffix = ""
+    _year_suffix = ""  # pylint: disable=invalid-name
 else:
     if _year < 2100:
         _year = _year % 100
 
-    _year_suffix = "-" + str(_year)
+    _year_suffix = "-" + str(_year)  # pylint: disable=invalid-name
 
 
 # ----------------------------------------------------------------------
