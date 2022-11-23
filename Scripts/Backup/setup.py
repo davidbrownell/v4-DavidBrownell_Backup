@@ -76,7 +76,6 @@ setup(
             ).format(
                 year_suffix=_year_suffix,
             ),
-
             # icon=<icon_filename>
             target_name=_name,
             # trademarks="",
