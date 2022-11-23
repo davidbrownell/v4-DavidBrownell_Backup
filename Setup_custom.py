@@ -21,6 +21,8 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+from semantic_version import Version as SemVer
+
 from Common_Foundation.Shell import Commands                                # type: ignore  # pylint: disable=import-error,unused-import
 from Common_Foundation.Streams.DoneManager import DoneManager               # type: ignore  # pylint: disable=import-error,unused-import
 from Common_Foundation import Types                                         # type: ignore  # pylint: disable=import-error,unused-import
@@ -73,7 +75,11 @@ def GetConfigurations() -> Union[
             ],
             Configuration.VersionSpecs(
                 [],                             # tools
-                {},                             # libraries
+                {
+                    "Python": [
+                        Configuration.VersionInfo("cx_freeze", SemVer("6.13.1")),
+                    ],
+                },                             # libraries
             ),
         ),
     }

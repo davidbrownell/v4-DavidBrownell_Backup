@@ -98,3 +98,50 @@ jobs:
       execute_EndToEndTests:                0
       execute_BuildVerificationTests:       1
       execute_PerformanceTests:             0
+
+  _2bd43382-f8cf-4d75-b266-e5c51cde8c8b:
+    name: "DavidBrownell_Backup: Validate Binaries"
+
+    needs:
+      - _48a57d9f-cc51-4bef-8e87-2e5f936173c2
+
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    runs-on:                                ${{ matrix.os }}
+
+    steps:
+      - name: "[Impl] Dump Contexts"
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/dump_contexts@CI-v1
+
+      # outputs:
+      #   - local_script_prefix
+      #   - script_extension
+      #   - shell_name
+      #   - source_command
+      #   - sudo_command
+      #   - working_dir
+      #
+      - name: "[Impl] Initialize OS-Specific Variables"
+        id: initialize
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/initialize@CI-v1
+        with:
+          os:                               ${{ matrix.os }}
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: "[${{ github.run_number }}, v4-DavidBrownell_Backup, ${{ matrix.os }}, dev] Builder Artifacts"
+          path: "${{ steps.initialize.outputs.working_dir }}"
+
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      - name: Run Test
+        run: |
+          python3 Scripts/Backup/BinaryTests/Binary_BuildVerificationTest.py "${{ steps.initialize.outputs.working_dir }}"
