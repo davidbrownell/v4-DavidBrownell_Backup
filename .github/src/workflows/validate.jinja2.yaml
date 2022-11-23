@@ -1,0 +1,133 @@
+# ----------------------------------------------------------------------
+# |
+# |  validate.yaml
+# |
+# |  David Brownell <db@DavidBrownell.com>
+# |      2022-11-17 10:10:35
+# |
+# ----------------------------------------------------------------------
+# |
+# |  Copyright David Brownell 2022
+# |  Distributed under the Boost Software License, Version 1.0. See
+# |  accompanying file LICENSE_1_0.txt or copy at
+# |  http://www.boost.org/LICENSE_1_0.txt.
+# |
+# ----------------------------------------------------------------------
+name: "[callable] Validates DavidBrownell_Backup"
+
+on:
+  workflow_call:
+    inputs:
+      repo_branch:                          {type: string, required: true}
+      bootstrap_branch_overrides:           {type: string, required: false}
+
+# Note that we aren't using a matrix for the os here as we want to increase overall throughput
+# (rather than forcing the binary validation job to wait until all of the dev jobs are complete).
+
+jobs:
+<<%
+  set os_values = [
+    "macos-latest",
+    "ubuntu-latest",
+    "windows-latest",
+  ]
+%>>
+<<% for os in os_values %>>
+  # ----------------------------------------------------------------------
+  # |
+  # |  <<< os >>>
+  # |
+  # ----------------------------------------------------------------------
+  _<<< guid(os + "dev") >>>:
+    name: "Build and Test: dev"
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-latest
+    with:
+      job_name_prefix:                      "DavidBrownell_Backup"
+      repo_name:                            davidbrownell/v4-DavidBrownell_Backup
+      repo_branch:                          ${{ inputs.repo_branch }}
+      bootstrap_branch_overrides:           ${{ inputs.bootstrap_branch_overrides }}
+
+      os:                                   <<< os >>>
+      configuration:                        dev
+
+      run_PylintVerifier:                   true
+      run_Builder:                          true
+
+      # Use the following values to control how different test types are run:
+      #
+      #   0: Do not run these test types
+      #   1: Run these test types without code coverage
+      #   2: Run these test types with code coverage
+      #   3: Run these test types with and without code coverage
+
+      execute_UnitTests:                    3
+      execute_FunctionalTests:              1
+      execute_IntegrationTests:             1
+      execute_SystemTests:                  1
+      execute_LocalEndToEndTests:           1
+      execute_EndToEndTests:                0
+      execute_BuildVerificationTests:       1
+      execute_PerformanceTests:             0
+
+  _<<< guid(os + "standard") >>>:
+    name: "Build and Test: standard"
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-latest
+    with:
+      job_name_prefix:                      "DavidBrownell_Backup"
+      repo_name:                            davidbrownell/v4-DavidBrownell_Backup
+      repo_branch:                          ${{ inputs.repo_branch }}
+      bootstrap_branch_overrides:           ${{ inputs.bootstrap_branch_overrides }}
+
+      os:                                   <<< os >>>
+      configuration:                        standard
+
+      run_Builder:                          true
+
+      # Use the following values to control how different test types are run:
+      #
+      #   0: Do not run these test types
+      #   1: Run these test types without code coverage
+      #   2: Run these test types with code coverage
+      #   3: Run these test types with and without code coverage
+
+      execute_UnitTests:                    3
+      execute_FunctionalTests:              1
+      execute_IntegrationTests:             1
+      execute_SystemTests:                  1
+      execute_LocalEndToEndTests:           1
+      execute_EndToEndTests:                0
+      execute_BuildVerificationTests:       1
+      execute_PerformanceTests:             0
+
+  _<<< guid() >>>:
+    name: "DavidBrownell_Backup (<<< os >>>, dev binaries)"
+    runs-on:                                <<< os >>>
+    needs:
+      - _<<< guid(os + "dev") >>>
+      - _<<< guid(os + "standard") >>>
+
+    steps:
+      - name: "[Impl] Dump Contexts"
+        if: ${{ startsWith('<<< os >>>', 'ubuntu') }}
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/dump_contexts@CI-v1
+
+      - name: "[Impl] Initialize OS-Specific Variables"
+        id: initialize
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/initialize@CI-v1
+        with:
+          os:                               <<< os >>>
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: "[${{ github.run_number }}, v4-DavidBrownell_Backup, <<< os >>>, dev] Builder Artifacts"
+          path: "${{ steps.initialize.outputs.working_dir }}"
+
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      - name: Run Test
+        run: |
+          python3 Scripts/Backup/BinaryTests/Binary_BuildVerificationTest.py "${{ steps.initialize.outputs.working_dir }}"
+
+<<% endfor %>>
