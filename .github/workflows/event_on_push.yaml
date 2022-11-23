@@ -21,6 +21,8 @@ on:
     branches:
       - main
 
+concurrency: "on_push-${{ github.ref_name }}"
+
 jobs:
   _545be203-55eb-4d41-bd97-43da41be2841:
     name: "Validate"
