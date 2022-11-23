@@ -15,6 +15,7 @@
 # ----------------------------------------------------------------------
 """Setup for Backup"""
 
+import datetime
 import sys
 import textwrap
 
@@ -28,6 +29,8 @@ from Common_Foundation import PathEx
 
 # ----------------------------------------------------------------------
 _this_dir                                   = Path(__file__).parent
+_repo_root                                  = _this_dir.parent.parent
+
 _name                                       = _this_dir.name
 
 
@@ -38,10 +41,27 @@ with ExitStack(lambda: sys.path.pop(0)):
     from Backup import __main__ as Backup
 
 
+# Read version info from VERSION file
+with PathEx.EnsureFile(_repo_root / "VERSION").open() as f:
+    _version = f.read().strip()
+    assert _version
+
+# Create the year suffix
+_year = datetime.datetime.now().year
+
+if _year == 2022:
+    _year_suffix = ""
+else:
+    if _year < 2100:
+        _year = _year % 100
+
+    _year_suffix = "-" + str(_year)
+
+
 # ----------------------------------------------------------------------
 setup(
     name=_name,
-    version="1.0.0",
+    version=_version,
     description=Backup.__doc__,
     executables=[
         Executable(
@@ -49,11 +69,14 @@ setup(
             base=None,
             copyright=textwrap.dedent(
                 """\
-                Copyright David Brownell 2022
+                Copyright David Brownell 2022{year_suffix}
                 Distributed under the Boost Software License, Version 1.0. See
                 copy at http://www.boost.org/LICENSE_1_0.txt.
                 """,
+            ).format(
+                year_suffix=_year_suffix,
             ),
+
             # icon=<icon_filename>
             target_name=_name,
             # trademarks="",
