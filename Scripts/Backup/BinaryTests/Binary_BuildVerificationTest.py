@@ -99,7 +99,7 @@ def _ValidateMirror(
     backup_filename: Path,
     temp_directory: Path,
 ) -> int:
-    source_dir = Path.cwd()
+    source_dir = Path(__file__).parent.parent.parent.parent
     destination = temp_directory / "destination"
 
     command_line = '"{}" mirror execute "{}" "{}"'.format(

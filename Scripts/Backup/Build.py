@@ -22,7 +22,6 @@ from enum import auto, Enum
 from pathlib import Path
 from typing import Callable, List, Optional, TextIO, Tuple, Union
 
-
 from Common_Foundation import PathEx
 from Common_Foundation.Streams.DoneManager import DoneManager, DoneManagerFlags
 from Common_Foundation import SubprocessEx
