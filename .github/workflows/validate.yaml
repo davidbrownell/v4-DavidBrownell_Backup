@@ -100,7 +100,7 @@ jobs:
       execute_PerformanceTests:             0
 
   _2bd43382-f8cf-4d75-b266-e5c51cde8c8b:
-    name: "DavidBrownell_Backup: Validate Binaries"
+    name: "DavidBrownell_Backup (${{ matrix.os }}, validate)"
 
     needs:
       - _48a57d9f-cc51-4bef-8e87-2e5f936173c2
