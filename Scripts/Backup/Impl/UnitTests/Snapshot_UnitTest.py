@@ -16,9 +16,12 @@
 """Unit tests for Snapshot.py"""
 
 import copy
+import json
+import os
 import re
 import sys
 
+from io import StringIO
 from pathlib import Path
 from unittest import mock
 
@@ -26,11 +29,14 @@ import pytest
 
 from Common_Foundation.ContextlibEx import ExitStack
 from Common_Foundation import PathEx
+from Common_Foundation.Shell.All import CurrentShell
+from Common_Foundation.Streams.DoneManager import DoneManager
 
 
 # ----------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 with ExitStack(lambda: sys.path.pop(0)):
+    from Backup.Impl.Capabilities.FileSystemCapabilities import FileSystemCapabilities
     from Backup.Impl.Snapshot import Snapshot
 
 
@@ -51,8 +57,8 @@ class TestCalculate(object):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_Single(self, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_Single(self, _working_dir, run_in_parallel):
         dm_mock = mock.MagicMock()
 
         dm_mock.Nested().__enter__().result = 0
@@ -62,7 +68,8 @@ class TestCalculate(object):
             [
                 _working_dir / "one",
             ],
-            is_ssd=is_ssd,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=run_in_parallel,
         )
 
         assert result.node == Snapshot.Node.Create(
@@ -73,8 +80,8 @@ class TestCalculate(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_Multiple(self, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_Multiple(self, _working_dir, run_in_parallel):
         dm_mock = mock.MagicMock()
 
         dm_mock.Nested().__enter__().result = 0
@@ -85,7 +92,8 @@ class TestCalculate(object):
                 _working_dir / "two",
                 _working_dir / "one",
             ],
-            is_ssd=is_ssd,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=run_in_parallel,
         )
 
         assert result.node == Snapshot.Node.Create(
@@ -101,8 +109,8 @@ class TestCalculate(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_SingleWithoutHashes(self, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_SingleWithoutHashes(self, _working_dir, run_in_parallel):
         dm_mock = mock.MagicMock()
 
         dm_mock.Nested().__enter__().result = 0
@@ -112,7 +120,8 @@ class TestCalculate(object):
             [
                 _working_dir / "one",
             ],
-            is_ssd=is_ssd,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=run_in_parallel,
             calculate_hashes=False,
         )
 
@@ -124,8 +133,8 @@ class TestCalculate(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_FileInput(self, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_FileInput(self, _working_dir, run_in_parallel):
         dm_mock = mock.MagicMock()
 
         dm_mock.Nested().__enter__().result = 0
@@ -135,7 +144,8 @@ class TestCalculate(object):
             [
                 _working_dir / "one" / "A",
             ],
-            is_ssd=is_ssd,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=run_in_parallel,
         )
 
         assert result.node == Snapshot.Node.Create(
@@ -145,8 +155,8 @@ class TestCalculate(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_MultipleWithoutHashes(self, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_MultipleWithoutHashes(self, _working_dir, run_in_parallel):
         dm_mock = mock.MagicMock()
 
         dm_mock.Nested().__enter__().result = 0
@@ -157,7 +167,8 @@ class TestCalculate(object):
                 _working_dir / "two",
                 _working_dir / "one",
             ],
-            is_ssd=is_ssd,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=run_in_parallel,
             calculate_hashes=False,
         )
 
@@ -184,7 +195,8 @@ class TestCalculate(object):
             [
                 _working_dir / "VeryLongPaths",
             ],
-            is_ssd=False,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=False,
         )
 
         assert result.node == Snapshot.Node.Create(
@@ -205,7 +217,8 @@ class TestCalculate(object):
             [
                 _working_dir / "EmptyDirTest",
             ],
-            is_ssd=False,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=False,
         )
 
         assert result.node == Snapshot.Node.Create(
@@ -215,8 +228,8 @@ class TestCalculate(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_WithFilterFilenameFunc(self, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_WithFilterFilenameFunc(self, _working_dir, run_in_parallel):
         dm_mock = mock.MagicMock()
 
         dm_mock.Nested().__enter__().result = 0
@@ -227,7 +240,8 @@ class TestCalculate(object):
                 _working_dir / "two",
                 _working_dir / "one",
             ],
-            is_ssd=is_ssd,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=run_in_parallel,
             filter_filename_func=lambda value: value != (_working_dir / "two" / "Dir1" / "File3"),
         )
 
@@ -244,8 +258,8 @@ class TestCalculate(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_WithFilterFilenameFuncNoMatches(self, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_WithFilterFilenameFuncNoMatches(self, _working_dir, run_in_parallel):
         dm_mock = mock.MagicMock()
 
         dm_mock.Nested().__enter__().result = 0
@@ -256,7 +270,8 @@ class TestCalculate(object):
                 _working_dir / "two",
                 _working_dir / "one",
             ],
-            is_ssd=is_ssd,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=run_in_parallel,
             filter_filename_func=lambda value: False,
         )
 
@@ -272,7 +287,8 @@ class TestCalculate(object):
             Snapshot.Calculate(
                 dm_mock,
                 [_working_dir / "one"],
-                is_ssd=False,
+                FileSystemCapabilities(_working_dir),
+                run_in_parallel=False,
             )
 
     # ----------------------------------------------------------------------
@@ -290,28 +306,32 @@ class TestCalculate(object):
             Snapshot.Calculate(
                 dm_mock,
                 [_working_dir / "one"],
-                is_ssd=False,
+                FileSystemCapabilities(_working_dir),
+                run_in_parallel=False,
             )
 
     # ----------------------------------------------------------------------
     def test_FileDisappears(self, local_working_dir):
         dm_mock = mock.MagicMock()
 
-        is_first_call = True
+        nested_mock = mock.MagicMock(result=0)
+        nested_mock.Nested().__enter__().result = 0
+
+        call_count = 0
 
         # ----------------------------------------------------------------------
         def Func():
-            nonlocal is_first_call
+            nonlocal call_count
 
-            if is_first_call:
-                is_first_call = False
-            else:
+            call_count += 1
+
+            if call_count == 2:
                 disappearing_file = local_working_dir / "DisappearingFile"
 
-                if disappearing_file.is_file():
-                    disappearing_file.unlink()
+                assert disappearing_file.is_file()
+                disappearing_file.unlink()
 
-            return mock.MagicMock(result=0)
+            return nested_mock
 
         # ----------------------------------------------------------------------
 
@@ -322,7 +342,8 @@ class TestCalculate(object):
             [
                 local_working_dir,
             ],
-            is_ssd=False,
+            FileSystemCapabilities(local_working_dir),
+            run_in_parallel=False,
         )
 
         assert result.node == Snapshot.Node.Create(
@@ -343,12 +364,15 @@ class TestCalculate(object):
                 [
                     Path("one/two/three"),
                 ],
-                is_ssd=False,
+                FileSystemCapabilities(Path()),
+                run_in_parallel=False,
             )
 
     # ----------------------------------------------------------------------
+    @mock.patch.object(Path, "is_dir")
     @mock.patch.object(Path, "exists")
-    def test_CalculateOverlapError(self, mocked_exists):
+    def test_CalculateOverlapError(self, mocked_is_dir, mocked_exists):
+        mocked_is_dir.return_value = True
         mocked_exists.return_value = True
 
         with pytest.raises(
@@ -361,13 +385,45 @@ class TestCalculate(object):
                     Path("one/two/three"),
                     Path("one"),
                 ],
-                is_ssd=False,
+                FileSystemCapabilities(Path()),
+                run_in_parallel=False,
             )
+
+    # ----------------------------------------------------------------------
+    def test_UnsupportedFileType(self, _working_dir):
+        os.symlink(_working_dir / "two" / "File1", _working_dir / "two" / "symFile")
+        os.symlink(_working_dir / "two" / "Dir1", _working_dir / "two" / "symDir", target_is_directory=True)
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            result = Snapshot.Calculate(
+                dm,
+                [
+                    _working_dir / "two",
+                ],
+                FileSystemCapabilities(_working_dir),
+                run_in_parallel=False,
+            )
+
+        sink = sink.getvalue()
+
+        assert result.node == Snapshot.Node.Create(
+            {
+                _working_dir / "two" / "File1": ("15703c6965d528c208f42bd8ca9d63a7ea4409652c5587734a233d875e7d1ee3f99510a238abfb83b45c51213535c98dede44222dc8596046da0b63078a55675", 9),
+                _working_dir / "two" / "File2": ("0a8abfedd9153b65e90a93692bec11b14c36ddb7448a0b7bd61d0c9269693120b417a7872f552f0e274d7d7367ed41d5b7e8a84991266da4fcd53ee775420c5a", 9),
+                _working_dir / "two" / "Dir1/File3": ("d919d6b3367c051892e6de02c85f7315067b813fa6aef32c9780a23ac0bb9fa63c0db2d1b5f5337114bcd9d7aea809cf1b21034bbb0a33d25eb7f53b55b9be9d", 14),
+                _working_dir / "two" / "Dir1/File4": ("b4d800b7c6c78cf3248849d333925fea1c3063677461056d93854c47d578fbbea3aaa7f905edd2e2c79b3cc837e5f851d38703bfe68a3db3aaf6b2d012d1b221", 14),
+                _working_dir / "two" / "Dir1/File4": ("b4d800b7c6c78cf3248849d333925fea1c3063677461056d93854c47d578fbbea3aaa7f905edd2e2c79b3cc837e5f851d38703bfe68a3db3aaf6b2d012d1b221", 14),
+                _working_dir / "two" / "Dir2/Dir3/File5": ("1d3fb9708c4737f09cf99ece9660e1a73d83296a8744d3e59ffe5bb781c3aed0ee7db6dabc075d280e1a61abf2d75d9b1102edb1fd210efd73ad12911f3cf408", 19),
+            },
+        )
 
 
 # ----------------------------------------------------------------------
 class TestPersistAndLoad(object):
     # ----------------------------------------------------------------------
+    @pytest.mark.filterwarnings('ignore:install "ipywidgets" for Jupyter support')
     def test(self, _working_dir, tmp_path):
         dm_mock = mock.MagicMock()
 
@@ -378,19 +434,63 @@ class TestPersistAndLoad(object):
             [
                 _working_dir,
             ],
-            is_ssd=False,
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=False,
         )
 
         assert result.node
 
-        assert result.IsPersisted(tmp_path) is False
-        result.Persist(dm_mock, tmp_path)
-        assert result.IsPersisted(tmp_path) is True
+        capabilities = FileSystemCapabilities(tmp_path)
 
-        loaded_result = Snapshot.LoadPersisted(dm_mock, tmp_path)
+        assert result.IsPersisted(capabilities) is False
+        result.Persist(dm_mock, capabilities)
+        assert result.IsPersisted(capabilities) is True
+
+        loaded_result = Snapshot.LoadPersisted(dm_mock, capabilities)
 
         assert loaded_result is not result
         assert loaded_result == result
+
+    # ----------------------------------------------------------------------
+    @pytest.mark.filterwarnings('ignore:install "ipywidgets" for Jupyter support')
+    def test_InvalidJson(self, _working_dir, tmp_path):
+        dm_mock = mock.MagicMock()
+
+        dm_mock.Nested().__enter__().result = 0
+
+        result = Snapshot.Calculate(
+            dm_mock,
+            [
+                _working_dir,
+            ],
+            FileSystemCapabilities(_working_dir),
+            run_in_parallel=False,
+        )
+
+        assert result.node
+
+        capabilities = FileSystemCapabilities(tmp_path)
+
+        assert result.IsPersisted(capabilities) is False
+        result.Persist(dm_mock, capabilities)
+        assert result.IsPersisted(capabilities) is True
+
+        json_filename = tmp_path / Snapshot.PERSISTED_FILE_NAME
+        assert json_filename.is_file(), json_filename
+
+        with json_filename.open() as f:
+            original_content = json.load(f)
+
+        original_content.pop("children")
+
+        with json_filename.open("w") as f:
+            json.dump(original_content, f)
+
+        with pytest.raises(
+            Exception,
+            match=re.compile(r"The content at '.+?' is not valid\."),
+        ):
+            Snapshot.LoadPersisted(dm_mock, capabilities)
 
 
 # ----------------------------------------------------------------------
@@ -1167,6 +1267,56 @@ class TestNodeProperties(object):
 
         assert node.children["one"].children["two"].children["three"].is_dir
         assert node.children["one"].children["two"].children["three"].fullpath == Path("one") / "two" / "three"
+
+    # ----------------------------------------------------------------------
+    def test_Enum(self):
+        root = Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=False), None)
+
+        root.AddFile(Path("one/file1"), "file1", 1)
+        root.AddFile(Path("one/two/file2"), "file2", 2)
+        root.AddFile(Path("one/two/three/file3"), "file3", 3)
+        root.AddDir(Path("one/empty_dir"))
+
+        assert [
+            (node.fullpath, node.hash_value, node.file_size)
+            for node in root.Enum()
+        ] == [
+            (
+                Path("one"),
+                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                None,
+            ),
+            (
+                Path("one/file1"),
+                "file1",
+                1,
+            ),
+            (
+                Path("one/two"),
+                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                None,
+            ),
+            (
+                Path("one/two/file2"),
+                "file2",
+                2,
+            ),
+            (
+                Path("one/two/three"),
+                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                None,
+            ),
+            (
+                Path("one/two/three/file3"),
+                "file3",
+                3,
+            ),
+            (
+                Path("one/empty_dir"),
+                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                None,
+            ),
+        ]
 
 
 # ----------------------------------------------------------------------

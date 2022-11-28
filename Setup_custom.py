@@ -45,7 +45,9 @@ def GetConfigurations() -> Union[
         Configuration.Configuration,
     ],
 ]:
-    """Return configuration information for the repository"""
+    common_python_libraries: List[Configuration.VersionInfo] = [
+        Configuration.VersionInfo("paramiko", SemVer("2.12.0")),
+    ]
 
     configurations: Dict[str, Configuration.Configuration] = {
         "standard": Configuration.Configuration(
@@ -60,7 +62,9 @@ def GetConfigurations() -> Union[
             ],
             Configuration.VersionSpecs(
                 [],                             # tools
-                {},                             # libraries
+                {
+                    "Python": common_python_libraries,
+                },                             # libraries
             ),
         ),
         "dev": Configuration.Configuration(
@@ -76,7 +80,7 @@ def GetConfigurations() -> Union[
             Configuration.VersionSpecs(
                 [],                             # tools
                 {
-                    "Python": [
+                    "Python": common_python_libraries + [
                         Configuration.VersionInfo("cx_freeze", SemVer("6.13.1")),
                     ],
                 },                             # libraries

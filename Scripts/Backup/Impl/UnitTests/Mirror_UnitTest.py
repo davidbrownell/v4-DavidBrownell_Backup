@@ -15,6 +15,7 @@
 # ----------------------------------------------------------------------
 """Unit tests for Mirror.py"""
 
+import os
 import re
 import shutil
 import sys
@@ -22,7 +23,8 @@ import textwrap
 
 from io import StringIO
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, List, Tuple
+from unittest import mock
 
 import pytest
 
@@ -35,18 +37,19 @@ from Common_Foundation.Streams.DoneManager import DoneManager
 # ----------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 with ExitStack(lambda: sys.path.pop(0)):
-    from Backup.Impl.Mirror import Backup, Cleanup, FileSystemDestination, Snapshot, Validate, ValidateType
+    from Backup.Impl.Mirror import Backup, Cleanup, CONTENT_DIR_NAME, GetDestinationHelp, PENDING_COMMIT_EXTENSION, PENDING_DELETE_EXTENSION, Validate, ValidateType
     from Backup.Impl import TestHelpers
 
 
 # Note that this exercises based functionality; ../IntegrationTests/Mirror_Test.py exercises
 # backups with changes to the file system over time.
 
+
 # ----------------------------------------------------------------------
 class TestFileSystemBackup(object):
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_Standard(self, tmp_path_factory, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_Standard(self, tmp_path_factory, _working_dir, run_in_parallel):
         destination = tmp_path_factory.mktemp("destination")
 
         with DoneManager.Create(StringIO(), "") as dm:
@@ -54,12 +57,14 @@ class TestFileSystemBackup(object):
                 dm,
                 destination,
                 [_working_dir],
-                ssd=is_ssd,
+                ssd=run_in_parallel,
                 force=False,
                 quiet=False,
                 file_includes=None,
                 file_excludes=None,
             )
+
+            assert dm.result == 0
 
         TestHelpers.CompareFileSystemSourceAndDestination(
             _working_dir,
@@ -68,8 +73,8 @@ class TestFileSystemBackup(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_SingleFile(self, tmp_path_factory, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_SingleFile(self, tmp_path_factory, _working_dir, run_in_parallel):
         destination = tmp_path_factory.mktemp("destination")
 
         source_dir = _working_dir / "two" / "Dir2" / "Dir3"
@@ -81,12 +86,14 @@ class TestFileSystemBackup(object):
                 [
                     source_dir / "File5",
                 ],
-                ssd=is_ssd,
+                ssd=run_in_parallel,
                 force=False,
                 quiet=False,
                 file_includes=None,
                 file_excludes=None,
             )
+
+            assert dm.result == 0
 
         TestHelpers.CompareFileSystemSourceAndDestination(
             source_dir,
@@ -95,8 +102,8 @@ class TestFileSystemBackup(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_SingleDir(self, tmp_path_factory, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_SingleDir(self, tmp_path_factory, _working_dir, run_in_parallel):
         destination = tmp_path_factory.mktemp("destination")
 
         source_dir = _working_dir / "one"
@@ -108,12 +115,14 @@ class TestFileSystemBackup(object):
                 [
                     source_dir,
                 ],
-                ssd=is_ssd,
+                ssd=run_in_parallel,
                 force=False,
                 quiet=False,
                 file_includes=None,
                 file_excludes=None,
             )
+
+            assert dm.result == 0
 
         TestHelpers.CompareFileSystemSourceAndDestination(
             source_dir,
@@ -122,8 +131,8 @@ class TestFileSystemBackup(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_SingleFileAndDir(self, tmp_path_factory, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_SingleFileAndDir(self, tmp_path_factory, _working_dir, run_in_parallel):
         destination = tmp_path_factory.mktemp("destination")
 
         source_dir = _working_dir / "one"
@@ -140,12 +149,14 @@ class TestFileSystemBackup(object):
                     source_dir,
                     source_file,
                 ],
-                ssd=is_ssd,
+                ssd=run_in_parallel,
                 force=False,
                 quiet=False,
                 file_includes=None,
                 file_excludes=None,
             )
+
+            assert dm.result == 0
 
         TestHelpers.CompareFileSystemSourceAndDestination(
             [source_dir, source_file],
@@ -154,8 +165,8 @@ class TestFileSystemBackup(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_EmptyDir(self, tmp_path_factory, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_EmptyDir(self, tmp_path_factory, _working_dir, run_in_parallel):
         destination = tmp_path_factory.mktemp("destination")
 
         source_dir = _working_dir / "EmptyDirTest" / "EmptyDir"
@@ -169,12 +180,14 @@ class TestFileSystemBackup(object):
                 [
                     source_dir,
                 ],
-                ssd=is_ssd,
+                ssd=run_in_parallel,
                 force=False,
                 quiet=False,
                 file_includes=None,
                 file_excludes=None,
             )
+
+            assert dm.result == 0
 
         TestHelpers.CompareFileSystemSourceAndDestination(
             source_dir,
@@ -183,8 +196,8 @@ class TestFileSystemBackup(object):
         )
 
     # ----------------------------------------------------------------------
-    @pytest.mark.parametrize("is_ssd", [False, True])
-    def test_MultpleDirs(self, tmp_path_factory, _working_dir, is_ssd):
+    @pytest.mark.parametrize("run_in_parallel", [False, True])
+    def test_MultpleDirs(self, tmp_path_factory, _working_dir, run_in_parallel):
         destination = tmp_path_factory.mktemp("destination")
 
         source_dirs: List[Path] = [
@@ -200,12 +213,14 @@ class TestFileSystemBackup(object):
                 dm,
                 destination,
                 source_dirs,
-                ssd=is_ssd,
+                ssd=run_in_parallel,
                 force=False,
                 quiet=False,
                 file_includes=None,
                 file_excludes=None,
             )
+
+            assert dm.result == 0
 
         TestHelpers.CompareFileSystemSourceAndDestination(
             source_dirs,
@@ -240,7 +255,9 @@ class TestFileSystemBackup(object):
                 file_excludes=None,
             )
 
-        content_dir = TestHelpers.GetFileSystemDestinationContentDir(destination)
+            assert dm.result == 0
+
+        content_dir = destination / CONTENT_DIR_NAME
         content_dir_prefix = TestHelpers.GetOutputPath(content_dir, _working_dir)
 
         assert set(file_info.path for file_info in TestHelpers.Enumerate(content_dir)) == set(
@@ -280,7 +297,9 @@ class TestFileSystemBackup(object):
                 ],
             )
 
-        content_dir = TestHelpers.GetFileSystemDestinationContentDir(destination)
+            assert dm.result == 0
+
+        content_dir = destination / CONTENT_DIR_NAME
         content_dir_prefix = TestHelpers.GetOutputPath(content_dir, _working_dir)
 
         assert set(file_info.path for file_info in TestHelpers.Enumerate(content_dir)) == set(
@@ -319,7 +338,9 @@ class TestFileSystemBackup(object):
                 ],
             )
 
-        content_dir = TestHelpers.GetFileSystemDestinationContentDir(destination)
+            assert dm.result == 0
+
+        content_dir = destination / CONTENT_DIR_NAME
         content_dir_prefix = TestHelpers.GetOutputPath(content_dir, _working_dir)
 
         assert set(file_info.path for file_info in TestHelpers.Enumerate(content_dir)) == set(
@@ -347,7 +368,9 @@ class TestFileSystemBackup(object):
                 file_excludes=None,
             )
 
-        content_dir = TestHelpers.GetFileSystemDestinationContentDir(destination)
+            assert dm.result == 0
+
+        content_dir = destination / CONTENT_DIR_NAME
         content_dir_prefix = TestHelpers.GetOutputPath(content_dir, _working_dir)
 
         assert [file_info.path for file_info in TestHelpers.Enumerate(content_dir)] == [
@@ -376,6 +399,8 @@ class TestFileSystemBackup(object):
                     file_excludes=None,
                 )
 
+                assert dm.result == 0
+
     # ----------------------------------------------------------------------
     def test_ErrorOverlappingPaths(self, _working_dir):
         with pytest.raises(
@@ -402,6 +427,308 @@ class TestFileSystemBackup(object):
                     file_excludes=None,
                 )
 
+                assert dm.result == 0
+
+    # ----------------------------------------------------------------------
+    #shutil.disk_usage(self._working_dir).free
+    #@mock.patch.object(Path, "is_dir")
+    @mock.patch("shutil.disk_usage")
+    def test_ErrorInadequateDiskSpace(self, disk_usage_mock, tmp_path_factory, _working_dir):
+        # ----------------------------------------------------------------------
+        class MockedResult(object):
+            # ----------------------------------------------------------------------
+            def __init__(self):
+                self.free = 5
+
+        # ----------------------------------------------------------------------
+
+        disk_usage_mock.side_effect = lambda _: MockedResult()
+
+        destination = tmp_path_factory.mktemp("destination")
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Backup(
+                dm,
+                destination,
+                [_working_dir],
+                ssd=True,
+                force=False,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == -1
+
+        sink = sink.getvalue()
+
+        assert "There is not enough disk space to process this request." in sink
+        assert "1 KB required, 1 KB available" in sink
+
+    # ----------------------------------------------------------------------
+    def test_ChangeNone(self, _existing_content):
+        working_dir, destination = _existing_content
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Backup(
+                dm,
+                destination,
+                [working_dir],
+                ssd=True,
+                force=False,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == 0
+
+        sink = sink.getvalue()
+
+        assert "no diffs found" in sink
+
+        TestHelpers.CompareFileSystemSourceAndDestination(
+            working_dir,
+            destination,
+            10,
+            compare_file_contents=True,
+        )
+
+    # ----------------------------------------------------------------------
+    def test_ChangeFileRemoved(self, _existing_content):
+        working_dir, destination = _existing_content
+
+        (working_dir / "two" / "File1").unlink()
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Backup(
+                dm,
+                destination,
+                [working_dir],
+                ssd=True,
+                force=False,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == 0
+
+        sink = sink.getvalue()
+
+        assert "1 diff found" in sink
+
+        TestHelpers.CompareFileSystemSourceAndDestination(
+            working_dir,
+            destination,
+            9,
+            compare_file_contents=True,
+        )
+
+    # ----------------------------------------------------------------------
+    def test_ChangeDirRemoved(self, _existing_content):
+        working_dir, destination = _existing_content
+
+        PathEx.RemoveTree(working_dir / "two")
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Backup(
+                dm,
+                destination,
+                [working_dir],
+                ssd=True,
+                force=False,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == 0
+
+        sink = sink.getvalue()
+
+        assert "1 diff found" in sink
+
+        TestHelpers.CompareFileSystemSourceAndDestination(
+            working_dir,
+            destination,
+            5,
+            compare_file_contents=True,
+        )
+
+    # ----------------------------------------------------------------------
+    def test_ChangeFileAdded(self, _existing_content):
+        working_dir, destination = _existing_content
+
+        with (working_dir / "one" / "NewFile").open("w") as f:
+            f.write("New content!")
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Backup(
+                dm,
+                destination,
+                [working_dir],
+                ssd=True,
+                force=False,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == 0
+
+        sink = sink.getvalue()
+
+        assert "1 diff found" in sink
+
+        TestHelpers.CompareFileSystemSourceAndDestination(
+            working_dir,
+            destination,
+            11,
+            compare_file_contents=True,
+        )
+
+    # ----------------------------------------------------------------------
+    def test_ChangeDirAdded(self, _existing_content):
+        working_dir, destination = _existing_content
+
+        (working_dir / "one" / "NewDir").mkdir()
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Backup(
+                dm,
+                destination,
+                [working_dir],
+                ssd=True,
+                force=False,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == 0
+
+        sink = sink.getvalue()
+
+        assert "1 diff found" in sink
+
+        TestHelpers.CompareFileSystemSourceAndDestination(
+            working_dir,
+            destination,
+            11,
+            compare_file_contents=True,
+        )
+
+    # ----------------------------------------------------------------------
+    def test_ChangeModifyContent(self, _existing_content):
+        working_dir, destination = _existing_content
+
+        with (working_dir / "one" / "A").open("w") as f:
+            f.write("New content A")
+        with (working_dir / "one" / "BC").open("w") as f:
+            f.write("New content BC")
+        with (working_dir / "two" / "Dir1" / "File4").open("w") as f:
+            f.write("New content File4")
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Backup(
+                dm,
+                destination,
+                [working_dir],
+                ssd=True,
+                force=False,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == 0
+
+        sink = sink.getvalue()
+
+        assert "3 diffs found" in sink
+
+        TestHelpers.CompareFileSystemSourceAndDestination(
+            working_dir,
+            destination,
+            10,
+            compare_file_contents=True,
+        )
+
+    # ----------------------------------------------------------------------
+    def test_Force(self, _existing_content):
+        working_dir, destination = _existing_content
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Backup(
+                dm,
+                destination,
+                [working_dir],
+                ssd=True,
+                force=True,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == 0
+
+        sink = sink.getvalue()
+
+        assert "No diffs found" not in sink
+        assert "Committing snapshot data" in sink
+
+        TestHelpers.CompareFileSystemSourceAndDestination(
+            working_dir,
+            destination,
+            10,
+            compare_file_contents=True,
+        )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @pytest.fixture()
+    def _existing_content(tmp_path_factory, _working_dir) -> Tuple[Path, Path]:
+        destination = tmp_path_factory.mktemp("destination")
+
+        with DoneManager.Create(StringIO(), "") as dm:
+            Backup(
+                dm,
+                destination,
+                [_working_dir],
+                ssd=True,
+                force=False,
+                quiet=False,
+                file_includes=None,
+                file_excludes=None,
+            )
+
+            assert dm.result == 0
+
+        TestHelpers.CompareFileSystemSourceAndDestination(
+            _working_dir,
+            destination,
+            compare_file_contents=False,
+        )
+
+        return _working_dir, destination
+
 
 # ----------------------------------------------------------------------
 class TestFileSystemCleanup(object):
@@ -409,17 +736,14 @@ class TestFileSystemCleanup(object):
     def test_DoesNotExist(self):
         sink = StringIO()
 
-        does_not_exist = Path("does/not/exist/test").resolve()
+        does_not_exist = Path("does not exist").resolve()
 
         with DoneManager.Create(sink, "") as dm:
-            Cleanup(
-                dm,
-                str(does_not_exist),
-                ssd=False,
-                quiet=False,
-            )
+            Cleanup(dm, str(does_not_exist))
 
-        expected_text = "Content does not exist in '{}'.".format(does_not_exist)
+            assert dm.result == 0
+
+        expected_text = "Content does not exist.".format(does_not_exist)
         sink = sink.getvalue()
 
         assert expected_text in sink
@@ -440,8 +764,10 @@ class TestFileSystemCleanup(object):
                 file_excludes=None,
             )
 
+            assert dm.result == 0
+
             content_output_dir = TestHelpers.GetOutputPath(
-                TestHelpers.GetFileSystemDestinationContentDir(destination),
+                destination / CONTENT_DIR_NAME,
                 _working_dir,
             )
 
@@ -449,25 +775,20 @@ class TestFileSystemCleanup(object):
 
             # Pending deletes will be restored
             pending_delete_source = PathEx.EnsureFile(content_output_dir / "one" / "A")
-            pending_delete_file = pending_delete_source.parent / (pending_delete_source.name + FileSystemDestination.PENDING_DELETE_EXTENSION)
+            pending_delete_file = pending_delete_source.parent / (pending_delete_source.name + PENDING_DELETE_EXTENSION)
 
             # Pending commits will be removed
-            pending_commit_file = content_output_dir / "one" / ("BC" + FileSystemDestination.PENDING_COMMIT_EXTENSION)
+            pending_commit_file = content_output_dir / "one" / ("BC" + PENDING_COMMIT_EXTENSION)
 
             shutil.move(pending_delete_source, pending_delete_file)
 
             with pending_commit_file.open("w") as f:
                 f.write("New value")
 
-
             assert sum(1 for _ in TestHelpers.Enumerate(content_output_dir)) == original_num_files + 1
 
-            Cleanup(
-                dm,
-                destination,
-                ssd=False,
-                quiet=False,
-            )
+            Cleanup(dm, destination)
+            assert dm.result == 0
 
             assert sum(1 for _ in TestHelpers.Enumerate(content_output_dir)) == original_num_files
             assert pending_delete_source.is_file()
@@ -480,14 +801,42 @@ class TestFileSystemCleanup(object):
 
             assert sum(1 for _ in TestHelpers.Enumerate(content_output_dir)) == original_num_files + 1
 
-            Cleanup(
-                dm,
-                destination,
-                ssd=False,
-                quiet=False,
-            )
+            Cleanup(dm, destination)
+            assert dm.result == 0
 
             assert sum(1 for _ in TestHelpers.Enumerate(content_output_dir)) == original_num_files + 1
+
+    # ----------------------------------------------------------------------
+    def test_ContentIsFile(self, tmp_path_factory):
+        destination = tmp_path_factory.mktemp("root")
+
+        with (destination / CONTENT_DIR_NAME).open("w") as f:
+            f.write("This shouldn't be a file")
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            Cleanup(dm, destination)
+            assert dm.result == 0
+
+        sink = sink.getvalue()
+
+        assert "Removing the file '{}'...DONE!".format(CONTENT_DIR_NAME) in sink
+
+    # ----------------------------------------------------------------------
+    def test_ContentIsSymlink(self, tmp_path_factory):
+        destination = tmp_path_factory.mktemp("root")
+
+        os.symlink(destination, destination / CONTENT_DIR_NAME)
+
+        sink = StringIO()
+
+        with DoneManager.Create(sink, "") as dm:
+            with pytest.raises(
+                Exception,
+                match="'Content' is not a valid directory.",
+            ):
+                Cleanup(dm, destination)
 
 
 # ----------------------------------------------------------------------
@@ -516,12 +865,14 @@ class TestFileSystemValidate(object):
                 quiet=False,
             )
 
+            assert dm.result == -1
+
         sink = sink.getvalue()
 
         assert TestHelpers.ScrubDurations(sink) == textwrap.dedent(
             """\
             Sink output...
-              ERROR: No snapshot was found at '{}'.
+              ERROR: No snapshot was found.
             DONE! (-1, <scrubbed duration>)
             """,
         ).format(does_not_exist)
@@ -530,40 +881,47 @@ class TestFileSystemValidate(object):
     @pytest.mark.parametrize("validate_type", [ValidateType.standard, ValidateType.complete])
     def test_NoChange(self, tmp_path_factory, _working_dir, validate_type):
         self._Test(
-            lambda content_dir, snapshot_filename: (
+            lambda content_dir: (
                 textwrap.dedent(
                     """\
                     Sink output...
-                      Reading '{}'...DONE! (0, <scrubbed duration>)
+                      Reading 'BackupSnapshot.json'...
 
-                      Extracting local files...
-                        Cleaning destination content...DONE! (0, <scrubbed duration>, no items restored)
-                        Calculating files...
+
+                      DONE! (0, <scrubbed duration>)
+                      Reverting partially committed content at the destination...DONE! (0, <scrubbed duration>, no items reverted)
+
+                      Extracting files...
+                        Discovering files...
                           Processing 1 item...
 
 
                           DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
-                        Calculating hashes...
+                        {}
                           Processing 9 items...
 
 
                           DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>)
+
                         Organizing results...DONE! (0, <scrubbed duration>)
                       DONE! (0, <scrubbed duration>)
 
                       Validating content...
-                        INFO: The content is valid.
+                        INFO: No differences were found.
                       DONE! (0, <scrubbed duration>)
                     DONE! (0, <scrubbed duration>)
                     """,
-                ).format(snapshot_filename)
+                ).format(
+                    "Retrieving file information..." if validate_type == ValidateType.standard else "Calculating hashes...",
+                )
             ),
             tmp_path_factory,
             _working_dir,
             validate_type,
+            expected_validate_result=0,
         )
 
     # ----------------------------------------------------------------------
@@ -572,7 +930,6 @@ class TestFileSystemValidate(object):
         # ----------------------------------------------------------------------
         def Impl(
             content_dir: Path,
-            snapshot_filename: Path,
         ) -> str:
             file1 = content_dir / "one" / "NewFile1"
             file2 = content_dir / "EmptyDirTest" / "EmptyDir" / "NewFile2"
@@ -586,23 +943,27 @@ class TestFileSystemValidate(object):
             return textwrap.dedent(
                 """\
                 Sink output...
-                  Reading '{snapshot_filename}'...DONE! (0, <scrubbed duration>)
+                  Reading 'BackupSnapshot.json'...
 
-                  Extracting local files...
-                    Cleaning destination content...DONE! (0, <scrubbed duration>, no items restored)
-                    Calculating files...
+
+                  DONE! (0, <scrubbed duration>)
+                  Reverting partially committed content at the destination...DONE! (0, <scrubbed duration>, no items reverted)
+
+                  Extracting files...
+                    Discovering files...
                       Processing 1 item...
 
 
                       DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 11 files found, 0 empty directories found)
 
-                    Calculating hashes...
+                    {hash_header}
                       Processing 11 items...
 
 
                       DONE! (0, <scrubbed duration>, 11 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
+
                     Organizing results...DONE! (0, <scrubbed duration>)
                   DONE! (0, <scrubbed duration>)
 
@@ -613,7 +974,7 @@ class TestFileSystemValidate(object):
                 DONE! (-1, <scrubbed duration>)
                 """,
             ).format(
-                snapshot_filename=snapshot_filename,
+                hash_header="Retrieving file information..." if validate_type == ValidateType.standard else "Calculating hashes...",
                 file1=file1,
                 file2=file2,
             )
@@ -633,7 +994,6 @@ class TestFileSystemValidate(object):
         # ----------------------------------------------------------------------
         def Impl(
             content_dir: Path,
-            snapshot_filename: Path,
         ) -> str:
             file1 = content_dir / "one" / "A"
             file2 = content_dir / "EmptyDirTest" / "EmptyDir"
@@ -644,23 +1004,27 @@ class TestFileSystemValidate(object):
             return textwrap.dedent(
                 """\
                 Sink output...
-                  Reading '{snapshot_filename}'...DONE! (0, <scrubbed duration>)
+                  Reading 'BackupSnapshot.json'...
 
-                  Extracting local files...
-                    Cleaning destination content...DONE! (0, <scrubbed duration>, no items restored)
-                    Calculating files...
+
+                  DONE! (0, <scrubbed duration>)
+                  Reverting partially committed content at the destination...DONE! (0, <scrubbed duration>, no items reverted)
+
+                  Extracting files...
+                    Discovering files...
                       Processing 1 item...
 
 
                       DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 8 files found, 1 empty directory found)
 
-                    Calculating hashes...
+                    {hash_header}
                       Processing 8 items...
 
 
                       DONE! (0, <scrubbed duration>, 8 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
+
                     Organizing results...DONE! (0, <scrubbed duration>)
                   DONE! (0, <scrubbed duration>)
 
@@ -671,7 +1035,7 @@ class TestFileSystemValidate(object):
                 DONE! (-1, <scrubbed duration>)
                 """,
             ).format(
-                snapshot_filename=snapshot_filename,
+                hash_header="Retrieving file information..." if validate_type == ValidateType.standard else "Calculating hashes...",
                 file1=file1,
                 file2=file2,
             )
@@ -691,7 +1055,6 @@ class TestFileSystemValidate(object):
         # ----------------------------------------------------------------------
         def Impl(
             content_dir: Path,
-            snapshot_filename: Path,
         ) -> str:
             file = PathEx.EnsureFile(content_dir / "one" / "A")
 
@@ -703,7 +1066,7 @@ class TestFileSystemValidate(object):
 
             if validate_type == ValidateType.standard:
                 # No changes will be detected with standard compare (because the size didn't change)
-                validating_content_section = "INFO: The content is valid."
+                validating_content_section = "INFO: No differences were found."
                 return_code = 0
 
             elif validate_type == ValidateType.complete:
@@ -728,23 +1091,27 @@ class TestFileSystemValidate(object):
             return textwrap.dedent(
                 """\
                 Sink output...
-                  Reading '{snapshot_filename}'...DONE! (0, <scrubbed duration>)
+                  Reading 'BackupSnapshot.json'...
 
-                  Extracting local files...
-                    Cleaning destination content...DONE! (0, <scrubbed duration>, no items restored)
-                    Calculating files...
+
+                  DONE! (0, <scrubbed duration>)
+                  Reverting partially committed content at the destination...DONE! (0, <scrubbed duration>, no items reverted)
+
+                  Extracting files...
+                    Discovering files...
                       Processing 1 item...
 
 
                       DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
-                    Calculating hashes...
+                    {hash_header}
                       Processing 9 items...
 
 
                       DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
+
                     Organizing results...DONE! (0, <scrubbed duration>)
                   DONE! (0, <scrubbed duration>)
 
@@ -754,7 +1121,7 @@ class TestFileSystemValidate(object):
                 DONE! ({return_code}, <scrubbed duration>)
                 """,
             ).format(
-                snapshot_filename=snapshot_filename,
+                hash_header="Retrieving file information..." if validate_type == ValidateType.standard else "Calculating hashes...",
                 validating_content=validating_content_section,
                 return_code=return_code,
             )
@@ -766,6 +1133,7 @@ class TestFileSystemValidate(object):
             tmp_path_factory,
             _working_dir,
             validate_type,
+            expected_validate_result=0 if validate_type == ValidateType.standard else 1,
         )
 
     # ----------------------------------------------------------------------
@@ -774,7 +1142,6 @@ class TestFileSystemValidate(object):
         # ----------------------------------------------------------------------
         def Impl(
             content_dir: Path,
-            snapshot_filename: Path,
         ) -> str:
             file = PathEx.EnsureFile(content_dir / "one" / "A")
 
@@ -813,23 +1180,27 @@ class TestFileSystemValidate(object):
             return textwrap.dedent(
                 """\
                 Sink output...
-                  Reading '{snapshot_filename}'...DONE! (0, <scrubbed duration>)
+                  Reading 'BackupSnapshot.json'...
 
-                  Extracting local files...
-                    Cleaning destination content...DONE! (0, <scrubbed duration>, no items restored)
-                    Calculating files...
+
+                  DONE! (0, <scrubbed duration>)
+                  Reverting partially committed content at the destination...DONE! (0, <scrubbed duration>, no items reverted)
+
+                  Extracting files...
+                    Discovering files...
                       Processing 1 item...
 
 
                       DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
-                    Calculating hashes...
+                    {hash_header}
                       Processing 9 items...
 
 
                       DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
+
                     Organizing results...DONE! (0, <scrubbed duration>)
                   DONE! (0, <scrubbed duration>)
 
@@ -839,7 +1210,7 @@ class TestFileSystemValidate(object):
                 DONE! (1, <scrubbed duration>)
                 """,
             ).format(
-                snapshot_filename=snapshot_filename,
+                hash_header="Retrieving file information..." if validate_type == ValidateType.standard else "Calculating hashes...",
                 validating_content=validating_content_section,
             )
 
@@ -850,6 +1221,7 @@ class TestFileSystemValidate(object):
             tmp_path_factory,
             _working_dir,
             validate_type,
+            expected_validate_result=1,
         )
 
     # ----------------------------------------------------------------------
@@ -858,7 +1230,6 @@ class TestFileSystemValidate(object):
         # ----------------------------------------------------------------------
         def Impl(
             content_dir: Path,
-            snapshot_filename: Path,
         ) -> str:
             new_dir = content_dir / "New Empty Dir"
             new_file = content_dir / "New Dir with Content" / "File1"
@@ -872,23 +1243,27 @@ class TestFileSystemValidate(object):
             return textwrap.dedent(
                 """\
                 Sink output...
-                  Reading '{snapshot_filename}'...DONE! (0, <scrubbed duration>)
+                  Reading 'BackupSnapshot.json'...
 
-                  Extracting local files...
-                    Cleaning destination content...DONE! (0, <scrubbed duration>, no items restored)
-                    Calculating files...
+
+                  DONE! (0, <scrubbed duration>)
+                  Reverting partially committed content at the destination...DONE! (0, <scrubbed duration>, no items reverted)
+
+                  Extracting files...
+                    Discovering files...
                       Processing 1 item...
 
 
                       DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 10 files found, 2 empty directories found)
 
-                    Calculating hashes...
+                    {hash_header}
                       Processing 10 items...
 
 
                       DONE! (0, <scrubbed duration>, 10 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
+
                     Organizing results...DONE! (0, <scrubbed duration>)
                   DONE! (0, <scrubbed duration>)
 
@@ -899,7 +1274,7 @@ class TestFileSystemValidate(object):
                 DONE! (-1, <scrubbed duration>)
                 """,
             ).format(
-                snapshot_filename=snapshot_filename,
+                hash_header="Retrieving file information..." if validate_type == ValidateType.standard else "Calculating hashes...",
                 new_file=new_file,
                 new_dir=new_dir,
             )
@@ -919,7 +1294,6 @@ class TestFileSystemValidate(object):
         # ----------------------------------------------------------------------
         def Impl(
             content_dir: Path,
-            snapshot_filename: Path,
         ) -> str:
             dir1 = PathEx.EnsureDir(content_dir / "EmptyDirTest" / "EmptyDir")
             dir2 = PathEx.EnsureDir(content_dir / "one")
@@ -931,23 +1305,27 @@ class TestFileSystemValidate(object):
             return textwrap.dedent(
                 """\
                 Sink output...
-                  Reading '{snapshot_filename}'...DONE! (0, <scrubbed duration>)
+                  Reading 'BackupSnapshot.json'...
 
-                  Extracting local files...
-                    Cleaning destination content...DONE! (0, <scrubbed duration>, no items restored)
-                    Calculating files...
+
+                  DONE! (0, <scrubbed duration>)
+                  Reverting partially committed content at the destination...DONE! (0, <scrubbed duration>, no items reverted)
+
+                  Extracting files...
+                    Discovering files...
                       Processing 1 item...
 
 
                       DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 7 files found, 1 empty directory found)
 
-                    Calculating hashes...
+                    {hash_header}
                       Processing 7 items...
 
 
                       DONE! (0, <scrubbed duration>, 7 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
+
                     Organizing results...DONE! (0, <scrubbed duration>)
                   DONE! (0, <scrubbed duration>)
 
@@ -958,7 +1336,7 @@ class TestFileSystemValidate(object):
                 DONE! (-1, <scrubbed duration>)
                 """,
             ).format(
-                snapshot_filename=snapshot_filename,
+                hash_header="Retrieving file information..." if validate_type == ValidateType.standard else "Calculating hashes...",
                 dir1=dir1,
                 dir2=dir2,
             )
@@ -980,13 +1358,14 @@ class TestFileSystemValidate(object):
         alter_backup_func: Callable[
             [
                 Path,                       # Content dir
-                Path,                       # persisted snapshot filename
             ],
             str,
         ],
         tmp_path_factory,
         _working_dir,
         validate_type: ValidateType,
+        *,
+        expected_validate_result: int=-1,
     ) -> None:
         destination = tmp_path_factory.mktemp("destination")
 
@@ -1002,12 +1381,13 @@ class TestFileSystemValidate(object):
                 file_excludes=None,
             )
 
+            assert dm.result == 0
+
         expected_template = alter_backup_func(
             TestHelpers.GetOutputPath(
-                TestHelpers.GetFileSystemDestinationContentDir(destination),
+                destination / CONTENT_DIR_NAME,
                 _working_dir,
             ),
-            destination / Snapshot.PERSISTED_FILE_NAME,
         )
 
         sink = StringIO()
@@ -1030,10 +1410,22 @@ class TestFileSystemValidate(object):
                 quiet=True,
             )
 
+            assert dm.result == expected_validate_result
+
         sink = sink.getvalue()
         sink = TestHelpers.ScrubDurations(sink)
 
         assert sink == expected_template
+
+
+# ----------------------------------------------------------------------
+class TestGetDestinationHelp(object):
+    # ----------------------------------------------------------------------
+    def test(self):
+        content = GetDestinationHelp()
+
+        assert "File System" in content
+        assert "SFTP" in content
 
 
 # ----------------------------------------------------------------------
