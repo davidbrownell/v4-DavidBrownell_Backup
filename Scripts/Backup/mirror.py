@@ -45,6 +45,7 @@ class NaturalOrderGrouper(TyperGroup):
 # ----------------------------------------------------------------------
 app                                         = typer.Typer(
     cls=NaturalOrderGrouper,
+    epilog=Mirror.GetDestinationHelp(),
     no_args_is_help=True,
     pretty_exceptions_show_locals=False,
     pretty_exceptions_enable=False,
@@ -52,7 +53,7 @@ app                                         = typer.Typer(
 
 
 # ----------------------------------------------------------------------
-_destination_argument                       = typer.Argument(..., help="Destination to mirror content or of previously mirrored content; this value can be a path to a directory.")
+_destination_argument                       = typer.Argument(..., help="Destination to mirror content or of previously mirrored content; see the comments below on the available destination formats.")
 _ssd_option                                 = typer.Option(False, "--ssd", help="Processes tasks in parallel to leverage the capabilities of solid-state-drives.")
 _quiet_option                               = typer.Option(False, "--quiet", help="Reduce the amount of information displayed.")
 
@@ -73,7 +74,11 @@ def _ToRegex(
 
 
 # ----------------------------------------------------------------------
-@app.command("execute", no_args_is_help=True)
+@app.command(
+    "execute",
+    epilog=Mirror.GetDestinationHelp(),
+    no_args_is_help=True,
+)
 def Execute(
     destination: str=_destination_argument,
     input_filename_or_dirs: List[Path]=typer.Argument(..., exists=True, resolve_path=True, help="Input filename or directory."),
@@ -111,12 +116,13 @@ def Execute(
     no_args_is_help=True,
     epilog=textwrap.dedent(
         """\
-        Validation Types:
-
-            standard: Validates that files and directories exist and that file sizes match
-            complete: Validates that files and directories exist and that file hashes match
+        {}
+        Validation Types
+        ================
+            standard: Validates that files and directories at the destination exist and file sizes match the expected values.
+            complete: Validates that files and directories at the destination exist and file hashes match the expected values.
         """,
-    ).replace("\n", "\n\n"),
+    ).replace("\n", "\n\n").format(Mirror.GetDestinationHelp()),
 )
 def Validate(
     destination: str=_destination_argument,
@@ -141,12 +147,14 @@ def Validate(
 
 
 # ----------------------------------------------------------------------
-@app.command("cleanup", no_args_is_help=True)
+@app.command(
+    "cleanup",
+    epilog=Mirror.GetDestinationHelp(),
+    no_args_is_help=True,
+)
 def Cleanup(
     destination: str=_destination_argument,
-    ssd: bool=_ssd_option,
     verbose: bool=typer.Option(False, "--verbose", help="Write verbose information to the terminal."),
-    quiet: bool=_quiet_option,
     debug: bool=typer.Option(False, "--debug", help="Write debug information to the terminal."),
 ) -> None:
     """Cleans a backup location after a mirror execution that was interrupted or that failed."""
@@ -154,12 +162,7 @@ def Cleanup(
     with DoneManager.CreateCommandLine(
         output_flags=DoneManagerFlags.Create(verbose=verbose, debug=debug),
     ) as dm:
-        Mirror.Cleanup(
-            dm,
-            destination,
-            ssd=ssd,
-            quiet=quiet,
-        )
+        Mirror.Cleanup(dm, destination)
 
 
 # ----------------------------------------------------------------------

@@ -15,7 +15,6 @@
 # ----------------------------------------------------------------------
 """Local integration tests for ../Mirror.py"""
 
-import os
 import sys
 
 from io import StringIO
@@ -32,9 +31,11 @@ from Common_Foundation.Streams.DoneManager import DoneManager
 # ----------------------------------------------------------------------
 sys.path.insert(0, str(PathEx.EnsureDir(Path(__file__).parent.parent.parent.parent)))
 with ExitStack(lambda: sys.path.pop(0)):
-        from Backup.Impl.Mirror import Backup, FileSystemDestination
+        from Backup.Impl.Mirror import Backup, CONTENT_DIR_NAME
         from Backup.Impl import TestHelpers
 
+
+# TODO: Add tests that ensure content can be reverted after any stage
 
 # ----------------------------------------------------------------------
 class TestFileSystemBackup(object):
@@ -227,7 +228,7 @@ class TestFileSystemBackup(object):
 
         # Remove file from mirror
         destination_content_dir = TestHelpers.GetOutputPath(
-            TestHelpers.GetFileSystemDestinationContentDir(destination),
+            destination / CONTENT_DIR_NAME,
             _working_dir,
         )
 

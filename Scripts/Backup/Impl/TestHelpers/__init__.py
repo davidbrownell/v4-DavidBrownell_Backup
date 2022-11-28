@@ -28,7 +28,7 @@ from typing import Dict, Generator, List, Optional, Tuple, Union
 from Common_Foundation import PathEx
 from Common_Foundation.Shell.All import CurrentShell
 
-from ..Destinations.FileSystemDestination import FileSystemDestination
+from ..Mirror import CONTENT_DIR_NAME
 from ..Snapshot import Snapshot
 
 
@@ -49,18 +49,6 @@ class FileInfo(object):
 # |
 # |  Public Functions
 # |
-# ----------------------------------------------------------------------
-def GetFileSystemDestinationContentDir(
-    path: Path,
-) -> Path:
-    assert path.is_dir(), path
-
-    path = FileSystemDestination.GetSnapshotContentDir(path)
-    assert path.is_dir(), path
-
-    return path
-
-
 # ----------------------------------------------------------------------
 def GetOutputPath(
     destination_content_dir: Path,
@@ -186,7 +174,7 @@ def CompareFileSystemSourceAndDestination(
     snapshot_filename = destination / Snapshot.PERSISTED_FILE_NAME
     assert snapshot_filename.is_file(), snapshot_filename
 
-    content_dir = GetFileSystemDestinationContentDir(destination)
+    content_dir = destination / CONTENT_DIR_NAME
     assert content_dir.is_dir(), content_dir
 
     if isinstance(source_or_sources, list):

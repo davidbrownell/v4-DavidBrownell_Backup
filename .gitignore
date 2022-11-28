@@ -30,3 +30,5 @@ test_localsystem.txt
 .github/**/*Compiler.ConditionalInvocationQueryMixin.data
 
 .pylintrc
+
+**/paramiko.log

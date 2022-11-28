@@ -20,18 +20,24 @@ import hashlib
 import itertools
 import json
 import math
-import os
 
 from dataclasses import dataclass, field
 from enum import auto, Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 
+from rich.progress import Progress, TimeElapsedColumn
+
+from Common_Foundation.ContextlibEx import ExitStack
 from Common_Foundation import PathEx
+from Common_Foundation.Shell.All import CurrentShell
+from Common_Foundation.Streams.Capabilities import Capabilities as StreamCapabilities
 from Common_Foundation.Streams.DoneManager import DoneManager
 
 from Common_FoundationEx import ExecuteTasks
 from Common_FoundationEx.InflectEx import inflect
+
+from .Capabilities.Capabilities import Capabilities, ItemType
 
 
 # ----------------------------------------------------------------------
@@ -171,7 +177,7 @@ class Snapshot(object):
         def __post_init__(self):
             assert (
                 (self.name is None and self.parent is None)
-                or (self.name is not None and self.parent is not None)
+                or (self.name is not None and self.parent is not None and self.name)
             )
 
             assert (
@@ -403,6 +409,14 @@ class Snapshot(object):
             return diffs, atomic_result
 
         # ----------------------------------------------------------------------
+        def Enum(self) -> Generator["Snapshot.Node", None, None]:
+            if self.name is not None:
+                yield self
+
+            for child in self.children.values():
+                yield from child.Enum()
+
+        # ----------------------------------------------------------------------
         # ----------------------------------------------------------------------
         # ----------------------------------------------------------------------
         def _AddImpl(
@@ -473,8 +487,9 @@ class Snapshot(object):
         cls,
         dm: DoneManager,
         inputs: List[Path],
+        capabilities: Capabilities,
         *,
-        is_ssd: bool,
+        run_in_parallel: bool,
         quiet: bool=False,
         filter_filename_func: Optional[
             Callable[
@@ -488,7 +503,9 @@ class Snapshot(object):
         assert inputs
 
         for input_item in inputs:
-            if not input_item.exists():
+            item_type = capabilities.GetItemType(input_item)
+
+            if item_type != ItemType.File and item_type != ItemType.Dir:
                 raise Exception("'{}' is not a valid file or directory.".format(input_item))
 
         sorted_inputs = list(inputs)
@@ -528,7 +545,7 @@ class Snapshot(object):
         # Do not include this method in unit test code coverage, as dm is a mock which means that
         # Nested isn't called, meaning there won't be anything to invoke this functionality on __exit__.
         # Automated testing for this functionality will happen during IntegrationTests.
-        def CalculatingFilesExitStatus(): # pragma: no cover
+        def OnNestedExit(): # pragma: no cover
             # We need to do some extra work, because inflect doesn't work we we need a word between the number of items
             # and plural for where the singular form of the plural word ends in 'y'.
             num_empty_dirs = sum(len(input_info.empty_dirs) for input_info in all_input_infos.values())
@@ -541,7 +558,7 @@ class Snapshot(object):
 
         # ----------------------------------------------------------------------
 
-        with dm.Nested("Calculating files...", CalculatingFilesExitStatus) as calculating_dm:
+        with dm.Nested("Discovering files...", OnNestedExit) as calculating_dm:
             # ----------------------------------------------------------------------
             def CalculatingFilesStep1(
                 context: Path,
@@ -556,18 +573,22 @@ class Snapshot(object):
                     filenames: List[Path] = []
                     empty_dirs: List[Path] = []
 
-                    if input_item.is_file():
-                        filenames.append(input_item)
-                    else:
-                        for root, directories, these_filenames in os.walk(input_item):
-                            root = Path(root)
+                    input_item_type = capabilities.GetItemType(input_item)
 
+                    if input_item_type == ItemType.File:
+                        filenames.append(input_item)
+                    elif input_item_type == ItemType.Dir:
+                        for root, directories, these_filenames in capabilities.Walk(input_item):
                             if not directories and not these_filenames:
                                 empty_dirs.append(root)
                                 continue
 
                             for this_filename in these_filenames:
                                 fullpath = root / this_filename
+
+                                if capabilities.GetItemType(fullpath) != ItemType.File:
+                                    status.OnInfo("The file '{}' is not a supported item type.".format(fullpath))
+                                    continue
 
                                 if not filter_filename_func(fullpath):
                                     status.OnInfo(
@@ -578,6 +599,11 @@ class Snapshot(object):
                                     continue
 
                                 filenames.append(fullpath)
+                    else:
+                        # By default, FileSystemCapabilities and SFTPCapabilities will not get here, as
+                        # the will not traverse directory symlinks. Disable code coverage, but keep the
+                        # error in the name of defense-in-depth.
+                        raise Exception("'{}' is not a supported item type.".format(input_item))  # pragma: no cover
 
                     value = "{} found".format(inflect.no("file", len(filenames)))
 
@@ -603,7 +629,7 @@ class Snapshot(object):
                 ],
                 CalculatingFilesStep1,
                 quiet=quiet,
-                max_num_threads=None if is_ssd else 1,
+                max_num_threads=None if run_in_parallel else 1,
             )
 
             if calculating_dm.result != 0:
@@ -614,22 +640,26 @@ class Snapshot(object):
                 all_input_infos[root] = input_info
 
         if not any(input_info for input_info in all_input_infos.values()):
-            return cls(Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=False), None))
+            return cls(
+                Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=False), None),
+            )
 
-        with dm.Nested("\nCalculating hashes...") as hashes_dm:
+        with dm.Nested(
+            "\n" + ("Calculating hashes..." if calculate_hashes else "Retrieving file information..."),
+        ) as hashes_dm:
             # ----------------------------------------------------------------------
-            def CalculatingHashesStep2Func(
+            def CalculatingHashesStep2(
                 context: Path,
                 on_simple_status_func: Callable[[str], None],  # pylint: disable=unused-argument
             ) -> Tuple[Optional[int], ExecuteTasks.TransformStep2FuncType[Optional[Tuple[str, int]]]]:
-                filename = context
+                input_item = context
 
                 # ----------------------------------------------------------------------
                 def Step2(
                     status: ExecuteTasks.Status,
                 ) -> Tuple[Optional[Tuple[str, int]], Optional[str]]:
-                    if not filename.is_file():
-                        status.OnInfo("'{}' no longer exists.".format(filename))
+                    if capabilities.GetItemType(input_item) is None:
+                        status.OnInfo("'{}' no longer exists.".format(input_item))
                         return None, None
 
                     if not calculate_hashes:
@@ -638,29 +668,35 @@ class Snapshot(object):
                         hasher = hashlib.sha512()
                         bytes_hashed = 0
 
-                        with filename.open("rb") as f:
+                        with capabilities.Open(input_item, "rb") as f:
                             while True:
-                                chunk = f.read(16384)
-                                if not chunk:
+                                content = f.read(16384)
+                                if not content:
                                     break
 
-                                hasher.update(chunk)
+                                hasher.update(content)
+                                bytes_hashed += len(content)
 
-                                bytes_hashed += len(chunk)
-                                status.OnProgress(bytes_hashed, "")
+                                status.OnProgress(bytes_hashed, None)
 
                         hash_value = hasher.hexdigest()
 
-                    return (hash_value, filename.stat().st_size), None
+                    return (
+                        (
+                            hash_value,
+                            capabilities.GetFileSize(input_item),
+                        ),
+                        None,
+                    )
 
                 # ----------------------------------------------------------------------
 
-                if filename.is_file():
-                    num_steps = filename.stat().st_size
+                if capabilities.GetItemType(input_item) is None:
+                    file_size = None
                 else:
-                    num_steps = None
+                    file_size = capabilities.GetFileSize(input_item)
 
-                return num_steps, Step2
+                return file_size, Step2
 
             # ----------------------------------------------------------------------
 
@@ -676,16 +712,16 @@ class Snapshot(object):
                     hashes_dm,
                     "Processing",
                     tasks,
-                    CalculatingHashesStep2Func,
+                    CalculatingHashesStep2,
                     quiet=quiet,
-                    max_num_threads=None if is_ssd else 1,
+                    max_num_threads=None if run_in_parallel else 1,
                     refresh_per_second=4,
                 )
 
                 if hashes_dm.result != 0:
                     raise Exception("Errors encountered when hashing files.")
 
-        with dm.Nested("Organizing results..."):
+        with dm.Nested("\nOrganizing results..."):
             root = Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=False), None)
 
             filename_offset = 0
@@ -711,35 +747,69 @@ class Snapshot(object):
     @classmethod
     def IsPersisted(
         cls,
-        directory: Path,
+        capabilities: Capabilities,
     ) -> bool:
-        return (directory / cls.PERSISTED_FILE_NAME).is_file()
+        return capabilities.GetItemType(Path(cls.PERSISTED_FILE_NAME)) == ItemType.File
 
     # ----------------------------------------------------------------------
     @classmethod
     def LoadPersisted(
         cls,
         dm: DoneManager,
-        directory: Path,
+        capabilities: Capabilities,
     ) -> "Snapshot":
-        snapshot_filename = directory / cls.PERSISTED_FILE_NAME
+        snapshot_filename = Path(cls.PERSISTED_FILE_NAME)
 
-        with dm.Nested("Reading '{}'...".format(snapshot_filename)):
-            with snapshot_filename.open() as f:
-                content = json.load(f)
+        with dm.Nested("Reading '{}'...".format(snapshot_filename)) as reading_dm:
+            content = bytes()
 
-            return Snapshot(Snapshot.Node.FromJson(None, None, content))
+            with reading_dm.YieldStdout() as stdout_context:
+                stdout_context.persist_content = False
+
+                filename = Path(cls.PERSISTED_FILE_NAME)
+
+                with Progress(
+                    *Progress.get_default_columns(),
+                    TimeElapsedColumn(),
+                    "{task.fields[status]}",
+                    console=StreamCapabilities.Get(stdout_context.stream).CreateRichConsole(stdout_context.stream),  # type: ignore
+                    transient=True,
+                ) as progress_bar:
+                    total_progress_id = progress_bar.add_task(
+                        "{}Total Progress".format(stdout_context.line_prefix),
+                        total=capabilities.GetFileSize(filename),
+                        status="",
+                        visible=True,
+                    )
+
+                    with capabilities.Open(filename, "rb") as source:
+                        while True:
+                            chunk = source.read(16384)
+                            if not chunk:
+                                break
+
+                            content += chunk
+
+                            progress_bar.update(total_progress_id, advance=len(chunk))
+
+            try:
+                return Snapshot(
+                    Snapshot.Node.FromJson(None, None, json.loads(content.decode("UTF-8"))),
+                )
+
+            except KeyError as ex:
+                raise Exception("The content at '{}' is not valid.".format(snapshot_filename)) from ex
 
     # ----------------------------------------------------------------------
     def Persist(
         self,
         dm: DoneManager,
-        output_dir: Path,
+        capabilities: Capabilities,
     ) -> None:
-        snapshot_filename = output_dir / self.__class__.PERSISTED_FILE_NAME
+        snapshot_filename = Path(self.__class__.PERSISTED_FILE_NAME)
 
         with dm.Nested("Writing '{}'...".format(snapshot_filename)):
-            with snapshot_filename.open("w") as f:
+            with capabilities.Open(snapshot_filename, "w") as f:
                 json.dump(self.node.ToJson(), f)
 
     # ----------------------------------------------------------------------
