@@ -16,6 +16,7 @@
 """Builds Backup"""
 
 import os
+import re
 import shutil
 
 from enum import auto, Enum
@@ -38,7 +39,9 @@ class BuildInfo(BuildInfoBase):
         super(BuildInfo, self).__init__(
             name="Backup",
             requires_output_dir=True,
-            required_development_configurations=["dev"],
+            required_development_configurations=[
+                re.compile("dev"),
+            ],
             disable_if_dependency_environment=True,
         )
 
