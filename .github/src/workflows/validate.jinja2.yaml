@@ -104,7 +104,6 @@ jobs:
     runs-on:                                <<< os >>>
     needs:
       - _<<< guid(os + "dev") >>>
-      - _<<< guid(os + "standard") >>>
 
     steps:
       - name: "[Impl] Dump Contexts"
