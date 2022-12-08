@@ -20,7 +20,8 @@ import typer
 
 from typer.core import TyperGroup
 
-import mirror  # type: ignore  # pylint: disable=import-error
+import mirror                               # type: ignore  # pylint: disable=import-error
+import offsite                              # type: ignore  # pylint: disable=import-error
 
 
 # ----------------------------------------------------------------------
@@ -41,6 +42,7 @@ app                                         = typer.Typer(
 )
 
 app.add_typer(mirror.app, name="mirror", help=mirror.__doc__)
+app.add_typer(offsite.app, name="offsite", help=offsite.__doc__)
 
 
 # ----------------------------------------------------------------------

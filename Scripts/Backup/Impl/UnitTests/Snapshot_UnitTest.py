@@ -36,8 +36,8 @@ from Common_Foundation.Streams.DoneManager import DoneManager
 # ----------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 with ExitStack(lambda: sys.path.pop(0)):
-    from Backup.Impl.Capabilities.FileSystemCapabilities import FileSystemCapabilities
-    from Backup.Impl.Snapshot import Snapshot
+    from Backup.Impl.DataStores.FileSystemDataStore import FileSystemDataStore
+    from Backup.Impl.Snapshot import Snapshot, DiffOperation, DiffResult, DirHashPlaceholder
 
 
 # ----------------------------------------------------------------------
@@ -68,7 +68,7 @@ class TestCalculate(object):
             [
                 _working_dir / "one",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(Path("")),
             run_in_parallel=run_in_parallel,
         )
 
@@ -92,7 +92,7 @@ class TestCalculate(object):
                 _working_dir / "two",
                 _working_dir / "one",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=run_in_parallel,
         )
 
@@ -120,7 +120,7 @@ class TestCalculate(object):
             [
                 _working_dir / "one",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=run_in_parallel,
             calculate_hashes=False,
         )
@@ -144,7 +144,7 @@ class TestCalculate(object):
             [
                 _working_dir / "one" / "A",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=run_in_parallel,
         )
 
@@ -167,7 +167,7 @@ class TestCalculate(object):
                 _working_dir / "two",
                 _working_dir / "one",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=run_in_parallel,
             calculate_hashes=False,
         )
@@ -195,7 +195,7 @@ class TestCalculate(object):
             [
                 _working_dir / "VeryLongPaths",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=False,
         )
 
@@ -217,7 +217,7 @@ class TestCalculate(object):
             [
                 _working_dir / "EmptyDirTest",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=False,
         )
 
@@ -240,7 +240,7 @@ class TestCalculate(object):
                 _working_dir / "two",
                 _working_dir / "one",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=run_in_parallel,
             filter_filename_func=lambda value: value != (_working_dir / "two" / "Dir1" / "File3"),
         )
@@ -270,7 +270,7 @@ class TestCalculate(object):
                 _working_dir / "two",
                 _working_dir / "one",
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=run_in_parallel,
             filter_filename_func=lambda value: False,
         )
@@ -287,7 +287,7 @@ class TestCalculate(object):
             Snapshot.Calculate(
                 dm_mock,
                 [_working_dir / "one"],
-                FileSystemCapabilities(_working_dir),
+                FileSystemDataStore(_working_dir),
                 run_in_parallel=False,
             )
 
@@ -306,7 +306,7 @@ class TestCalculate(object):
             Snapshot.Calculate(
                 dm_mock,
                 [_working_dir / "one"],
-                FileSystemCapabilities(_working_dir),
+                FileSystemDataStore(_working_dir),
                 run_in_parallel=False,
             )
 
@@ -342,7 +342,7 @@ class TestCalculate(object):
             [
                 local_working_dir,
             ],
-            FileSystemCapabilities(local_working_dir),
+            FileSystemDataStore(local_working_dir),
             run_in_parallel=False,
         )
 
@@ -364,7 +364,7 @@ class TestCalculate(object):
                 [
                     Path("one/two/three"),
                 ],
-                FileSystemCapabilities(Path()),
+                FileSystemDataStore(Path()),
                 run_in_parallel=False,
             )
 
@@ -385,7 +385,7 @@ class TestCalculate(object):
                     Path("one/two/three"),
                     Path("one"),
                 ],
-                FileSystemCapabilities(Path()),
+                FileSystemDataStore(Path()),
                 run_in_parallel=False,
             )
 
@@ -402,7 +402,7 @@ class TestCalculate(object):
                 [
                     _working_dir / "two",
                 ],
-                FileSystemCapabilities(_working_dir),
+                FileSystemDataStore(_working_dir),
                 run_in_parallel=False,
             )
 
@@ -434,19 +434,19 @@ class TestPersistAndLoad(object):
             [
                 _working_dir,
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=False,
         )
 
         assert result.node
 
-        capabilities = FileSystemCapabilities(tmp_path)
+        data_store = FileSystemDataStore(tmp_path)
 
-        assert result.IsPersisted(capabilities) is False
-        result.Persist(dm_mock, capabilities)
-        assert result.IsPersisted(capabilities) is True
+        assert result.IsPersisted(data_store) is False
+        result.Persist(dm_mock, data_store)
+        assert result.IsPersisted(data_store) is True
 
-        loaded_result = Snapshot.LoadPersisted(dm_mock, capabilities)
+        loaded_result = Snapshot.LoadPersisted(dm_mock, data_store)
 
         assert loaded_result is not result
         assert loaded_result == result
@@ -463,17 +463,17 @@ class TestPersistAndLoad(object):
             [
                 _working_dir,
             ],
-            FileSystemCapabilities(_working_dir),
+            FileSystemDataStore(_working_dir),
             run_in_parallel=False,
         )
 
         assert result.node
 
-        capabilities = FileSystemCapabilities(tmp_path)
+        data_store = FileSystemDataStore(tmp_path)
 
-        assert result.IsPersisted(capabilities) is False
-        result.Persist(dm_mock, capabilities)
-        assert result.IsPersisted(capabilities) is True
+        assert result.IsPersisted(data_store) is False
+        result.Persist(dm_mock, data_store)
+        assert result.IsPersisted(data_store) is True
 
         json_filename = tmp_path / Snapshot.PERSISTED_FILE_NAME
         assert json_filename.is_file(), json_filename
@@ -490,7 +490,7 @@ class TestPersistAndLoad(object):
             Exception,
             match=re.compile(r"The content at '.+?' is not valid\."),
         ):
-            Snapshot.LoadPersisted(dm_mock, capabilities)
+            Snapshot.LoadPersisted(dm_mock, data_store)
 
 
 # ----------------------------------------------------------------------
@@ -545,64 +545,64 @@ class TestDiff(object):
         assert other != snapshot
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "200",
                 "hash(200)",
                 200,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "201",
                 "hash(201)",
                 201,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "202",
                 "hash(202)",
                 202,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_no_content",
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_with_content" / "child1",
                 "hash(dir_with_content/child1)",
                 2001,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_with_content" / "child2",
                 "hash(dir_with_content/child2)",
                 2002,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file1",
                 "hash(nested/one/two/file1)",
                 20001,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file2",
                 "hash(nested/one/two/file2)",
                 20002,
@@ -612,12 +612,12 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two"),
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
             ),
         ]
@@ -630,10 +630,10 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("three"),
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
                 None,
                 None,
@@ -641,12 +641,12 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("three"),
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
             ),
         ]
@@ -660,8 +660,8 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("three") / "300",
                 None,
                 None,
@@ -671,8 +671,8 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("three") / "300",
                 "hash(300)",
                 300,
@@ -690,21 +690,21 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("new_dir"),
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
             ),
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("new_dir"),
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
                 None,
                 None,
@@ -720,21 +720,21 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("three") / "new_dir",
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
             ),
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("three") / "new_dir",
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
                 None,
                 None,
@@ -752,24 +752,24 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("one") / "100",
                 "hash(100)",
                 100,
                 "Modified(100)",
                 100,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("one") / "102",
                 "hash(102)",
                 102,
                 "Modified(102)",
                 102,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("two") / "201",
                 "hash(201)",
                 201,
@@ -779,24 +779,24 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("one") / "100",
                 "Modified(100)",
                 100,
                 "hash(100)",
                 100,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("one") / "102",
                 "Modified(102)",
                 102,
                 "hash(102)",
                 102,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("two") / "201",
                 "Modified(201)",
                 201,
@@ -812,8 +812,8 @@ class TestDiff(object):
         other.node.children["one"].children["100"].hash_value = "different_hash_value"
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("one") / "100",
                 "hash(100)",
                 100,
@@ -823,8 +823,8 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("one") / "100",
                 "different_hash_value",
                 100,
@@ -839,8 +839,8 @@ class TestDiff(object):
         other.node.children["one"].children["100"].file_size += 1
 
         assert list(snapshot.Diff(other, compare_hashes=False)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("one") / "100",
                 "hash(100)",
                 100,
@@ -850,8 +850,8 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot, compare_hashes=False)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.modify,
+            DiffResult(
+                DiffOperation.modify,
                 Path("one") / "100",
                 "different_hash_value",
                 101,
@@ -869,10 +869,10 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("three"),
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
                 None,
                 None,
@@ -880,12 +880,12 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("three"),
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
             ),
         ]
@@ -899,64 +899,64 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "200",
                 "hash(200)",
                 200,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "201",
                 "hash(201)",
                 201,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "202",
                 "hash(202)",
                 202,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_no_content",
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_with_content" / "child1",
                 "hash(dir_with_content/child1)",
                 2001,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_with_content" / "child2",
                 "hash(dir_with_content/child2)",
                 2002,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file1",
                 "hash(nested/one/two/file1)",
                 20001,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file2",
                 "hash(nested/one/two/file2)",
                 20002,
@@ -966,12 +966,12 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two"),
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                DirHashPlaceholder(explicitly_added=False),
                 None,
             ),
         ]
@@ -985,10 +985,10 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_no_content",
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
                 None,
                 None,
@@ -996,12 +996,12 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two") / "dir_no_content",
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
             ),
         ]
@@ -1015,16 +1015,16 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_with_content" / "child1",
                 "hash(dir_with_content/child1)",
                 2001,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_with_content" / "child2",
                 "hash(dir_with_content/child2)",
                 2002,
@@ -1034,12 +1034,12 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two") / "dir_with_content",
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                DirHashPlaceholder(explicitly_added=False),
                 None,
             ),
         ]
@@ -1053,8 +1053,8 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "dir_with_content" / "child2",
                 "hash(dir_with_content/child2)",
                 2002,
@@ -1064,8 +1064,8 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two") / "dir_with_content" / "child2",
                 None,
                 None,
@@ -1083,16 +1083,16 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file1",
                 "hash(nested/one/two/file1)",
                 20001,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file2",
                 "hash(nested/one/two/file2)",
                 20002,
@@ -1102,12 +1102,12 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two"),
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                DirHashPlaceholder(explicitly_added=False),
                 None,
             ),
         ]
@@ -1121,8 +1121,8 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file1",
                 "hash(nested/one/two/file1)",
                 20001,
@@ -1132,8 +1132,8 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two") / "nested" / "one" / "two" / "file1",
                 None,
                 None,
@@ -1151,16 +1151,16 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two") / "nested" / "one" / "two" / "file1",
                 None,
                 None,
                 "hash(nested/one/two/file1)",
                 20001,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("two") / "nested" / "one" / "two" / "file2",
                 None,
                 None,
@@ -1170,16 +1170,16 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file1",
                 "hash(nested/one/two/file1)",
                 20001,
                 None,
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("two") / "nested" / "one" / "two" / "file2",
                 "hash(nested/one/two/file2)",
                 20002,
@@ -1197,16 +1197,16 @@ class TestDiff(object):
         assert snapshot != other
 
         assert list(snapshot.Diff(other)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("one") / "100",
                 None,
                 None,
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("one") / "100",
                 "hash(100)",
                 100,
@@ -1216,18 +1216,18 @@ class TestDiff(object):
         ]
 
         assert list(other.Diff(snapshot)) == [
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.remove,
+            DiffResult(
+                DiffOperation.remove,
                 Path("one") / "100",
                 None,
                 None,
                 "hash(100)",
                 100,
             ),
-            Snapshot.DiffResult(
-                Snapshot.DiffOperation.add,
+            DiffResult(
+                DiffOperation.add,
                 Path("one") / "100",
-                Snapshot.DirHashPlaceholder(explicitly_added=True),
+                DirHashPlaceholder(explicitly_added=True),
                 None,
                 None,
                 None,
@@ -1239,8 +1239,8 @@ class TestDiff(object):
 class TestDirHashPlaceholder(object):
     # ----------------------------------------------------------------------
     def test_Equal(self):
-        assert Snapshot.DirHashPlaceholder(explicitly_added=True) == Snapshot.DirHashPlaceholder(explicitly_added=False)
-        assert Snapshot.DirHashPlaceholder(explicitly_added=True) != "Different type"
+        assert DirHashPlaceholder(explicitly_added=True) == DirHashPlaceholder(explicitly_added=False)
+        assert DirHashPlaceholder(explicitly_added=True) != "Different type"
 
 
 # ----------------------------------------------------------------------
@@ -1253,13 +1253,13 @@ class TestNodeProperties(object):
 
     # ----------------------------------------------------------------------
     def test_IsDir(self):
-        node = Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=True), None)
+        node = Snapshot.Node(None, None, DirHashPlaceholder(explicitly_added=True), None)
         assert not node.is_file
         assert node.is_dir
 
     # ----------------------------------------------------------------------
     def test_Fullpath(self):
-        node = Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=True), None)
+        node = Snapshot.Node(None, None, DirHashPlaceholder(explicitly_added=True), None)
 
         assert node.fullpath == Path("")
 
@@ -1270,7 +1270,7 @@ class TestNodeProperties(object):
 
     # ----------------------------------------------------------------------
     def test_Enum(self):
-        root = Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=False), None)
+        root = Snapshot.Node(None, None, DirHashPlaceholder(explicitly_added=False), None)
 
         root.AddFile(Path("one/file1"), "file1", 1)
         root.AddFile(Path("one/two/file2"), "file2", 2)
@@ -1283,7 +1283,7 @@ class TestNodeProperties(object):
         ] == [
             (
                 Path("one"),
-                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                DirHashPlaceholder(explicitly_added=False),
                 None,
             ),
             (
@@ -1293,7 +1293,7 @@ class TestNodeProperties(object):
             ),
             (
                 Path("one/two"),
-                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                DirHashPlaceholder(explicitly_added=False),
                 None,
             ),
             (
@@ -1303,7 +1303,7 @@ class TestNodeProperties(object):
             ),
             (
                 Path("one/two/three"),
-                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                DirHashPlaceholder(explicitly_added=False),
                 None,
             ),
             (
@@ -1313,7 +1313,7 @@ class TestNodeProperties(object):
             ),
             (
                 Path("one/empty_dir"),
-                Snapshot.DirHashPlaceholder(explicitly_added=False),
+                DirHashPlaceholder(explicitly_added=False),
                 None,
             ),
         ]

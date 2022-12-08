@@ -23,7 +23,7 @@ import re
 
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Match, Optional, Tuple, Union
 
 from Common_Foundation import PathEx
 from Common_Foundation.Shell.All import CurrentShell
@@ -43,6 +43,77 @@ class FileInfo(object):
 
     path: Path
     file_size: Optional[int]                # None if the instance corresponds to an empty dir
+
+
+# ----------------------------------------------------------------------
+class OutputScrubber(object):
+    """\
+    Scrub output produced by Backup functionality that is problematic during testing.
+
+    For example:
+        - Directory names based on datetime
+        - Size outputs based on the destination size
+
+    """
+
+    # ----------------------------------------------------------------------
+    def __init__(self):
+        self._directory_replacements: Dict[str, str]    = {}
+        self._directory_name_regex          = re.compile(
+            r"""(?#
+            Capture [begin]                 )(?P<value>(?#
+                Year                        )\d{4}\.(?#
+                Month                       )\d{2}\.(?#
+                Day                         )\d{2}\.(?#
+                Hour                        )\d{2}\.(?#
+                Minute                      )\d{2}\.(?#
+                Second                      )\d{2}(?#
+                Index                       )-\d+(?#
+                Suffix                      )(?:\.delta)?(?#
+            Capture [end]                   ))(?#
+            )""",
+        )
+
+        self._space_regex = re.compile(
+            r"""(?#
+            Capture [begin]                 )(?P<value>(?#
+                Value                       )\d+\s+(?#
+                Units                       ).B\s+(?#
+                available or required       )(?P<type>required|available)(?#
+            Capture [end]                   ))(?#
+            )""",
+        )
+
+    # ----------------------------------------------------------------------
+    def Replace(
+        self,
+        value: str,
+    ) -> str:
+        # ----------------------------------------------------------------------
+        def ReplaceDirectoryNames(
+            match: Match,
+        ) -> str:
+            folder = match.group("value")
+
+            replacement = self._directory_replacements.get(folder, None)
+            if replacement is None:
+                replacement = "<Folder{}>".format(len(self._directory_replacements))
+                self._directory_replacements[folder] = replacement
+
+            return replacement
+
+        # ----------------------------------------------------------------------
+        def ReplaceSpace(
+            match: Match,
+        ) -> str:
+            return "<scrubbed space {}>".format(match.group("type"))
+
+        # ----------------------------------------------------------------------
+
+        value = self._directory_name_regex.sub(ReplaceDirectoryNames, value)
+        value = self._space_regex.sub(ReplaceSpace, value)
+
+        return value
 
 
 # ----------------------------------------------------------------------
@@ -170,13 +241,8 @@ def CompareFileSystemSourceAndDestination(
     expected_num_items: Optional[int]=None,
     *,
     compare_file_contents: bool=False,
+    is_mirror: bool=True,
 ) -> None:
-    snapshot_filename = destination / Snapshot.PERSISTED_FILE_NAME
-    assert snapshot_filename.is_file(), snapshot_filename
-
-    content_dir = destination / CONTENT_DIR_NAME
-    assert content_dir.is_dir(), content_dir
-
     if isinstance(source_or_sources, list):
         sources = source_or_sources
     else:
@@ -185,9 +251,19 @@ def CompareFileSystemSourceAndDestination(
     common_source_path = PathEx.GetCommonPath(*sources)
     assert common_source_path is not None
 
-    content_prefix_dir = GetOutputPath(content_dir, common_source_path)
+    if is_mirror:
+        snapshot_filename = destination / Snapshot.PERSISTED_FILE_NAME
+        assert snapshot_filename.is_file(), snapshot_filename
 
-    assert content_prefix_dir.is_dir(), content_prefix_dir
+        content_dir = destination / CONTENT_DIR_NAME
+
+        content_prefix_dir = GetOutputPath(content_dir, common_source_path)
+        assert content_prefix_dir.is_dir(), content_prefix_dir
+    else:
+        content_dir = destination
+        content_prefix_dir = destination
+
+    assert content_dir.is_dir(), content_dir
 
     source_files: List[FileInfo] = []
 

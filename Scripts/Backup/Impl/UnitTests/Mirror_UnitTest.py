@@ -37,8 +37,9 @@ from Common_Foundation.Streams.DoneManager import DoneManager
 # ----------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 with ExitStack(lambda: sys.path.pop(0)):
-    from Backup.Impl.Mirror import Backup, Cleanup, CONTENT_DIR_NAME, GetDestinationHelp, PENDING_COMMIT_EXTENSION, PENDING_DELETE_EXTENSION, Validate, ValidateType
     from Backup.Impl import TestHelpers
+    from Backup.Impl.Common import PENDING_COMMIT_EXTENSION, PENDING_DELETE_EXTENSION
+    from Backup.Impl.Mirror import Backup, Cleanup, CONTENT_DIR_NAME, Validate, ValidateType
 
 
 # Note that this exercises based functionality; ../IntegrationTests/Mirror_Test.py exercises
@@ -430,8 +431,6 @@ class TestFileSystemBackup(object):
                 assert dm.result == 0
 
     # ----------------------------------------------------------------------
-    #shutil.disk_usage(self._working_dir).free
-    #@mock.patch.object(Path, "is_dir")
     @mock.patch("shutil.disk_usage")
     def test_ErrorInadequateDiskSpace(self, disk_usage_mock, tmp_path_factory, _working_dir):
         # ----------------------------------------------------------------------
@@ -1416,16 +1415,6 @@ class TestFileSystemValidate(object):
         sink = TestHelpers.ScrubDurations(sink)
 
         assert sink == expected_template
-
-
-# ----------------------------------------------------------------------
-class TestGetDestinationHelp(object):
-    # ----------------------------------------------------------------------
-    def test(self):
-        content = GetDestinationHelp()
-
-        assert "File System" in content
-        assert "SFTP" in content
 
 
 # ----------------------------------------------------------------------

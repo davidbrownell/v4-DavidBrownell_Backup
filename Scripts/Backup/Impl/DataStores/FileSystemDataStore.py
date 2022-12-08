@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |
-# |  FileSystemCapabilities.py
+# |  FileSystemDataStore.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2022-11-25 10:47:58
@@ -13,8 +13,9 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Contains the FileSystemCapabilities object"""
+"""Contains the FileSystemDataStore object"""
 
+import itertools
 import os
 import shutil
 
@@ -25,12 +26,12 @@ from typing import Generator, List, Optional, Tuple
 from Common_Foundation import PathEx
 from Common_Foundation.Types import overridemethod
 
-from ..Capabilities.Capabilities import Capabilities, ItemType
+from .DataStore import DataStore, ItemType
 
 
 # ----------------------------------------------------------------------
-class FileSystemCapabilities(Capabilities):
-    """Capabilities associated with a standard, local file system"""
+class FileSystemDataStore(DataStore):
+    """DataStore associated with a standard, local file system"""
 
     # ----------------------------------------------------------------------
     def __init__(
@@ -38,7 +39,14 @@ class FileSystemCapabilities(Capabilities):
         root: Path=Path.cwd(),
         *,
         ssd: bool=False,
+        is_local_filesystem_override_value_for_testing: Optional[bool]=None,
     ):
+        assert not root.exists() or root.is_dir(), root
+
+        super(FileSystemDataStore, self).__init__(
+            is_local_filesystem=is_local_filesystem_override_value_for_testing if is_local_filesystem_override_value_for_testing is not None else root.root == Path.cwd().root,
+        )
+
         self._working_dir: Path             = root
         self._ssd                           = ssd
 
@@ -49,7 +57,7 @@ class FileSystemCapabilities(Capabilities):
 
     # ----------------------------------------------------------------------
     @overridemethod
-    def ValidateMirrorInputs(
+    def ValidateBackupInputs(
         self,
         input_filename_or_dirs: List[Path],
     ) -> None:
@@ -86,7 +94,16 @@ class FileSystemCapabilities(Capabilities):
     # ----------------------------------------------------------------------
     @overridemethod
     def GetBytesAvailable(self) -> Optional[int]:
-        return shutil.disk_usage(Path().cwd()).free
+        # Find a directory that exists
+        for potential_dir in itertools.chain(
+            [self._working_dir, ],
+            self._working_dir.parents,
+            [Path.cwd(), ],
+        ):
+            if potential_dir.is_dir():
+                return shutil.disk_usage(potential_dir).free
+
+        assert False, self._working_dir
 
     # ----------------------------------------------------------------------
     @overridemethod

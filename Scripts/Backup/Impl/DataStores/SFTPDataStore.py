@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |
-# |  SFTPCapabilities.py
+# |  SFTPDataStore.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2022-11-25 11:15:55
@@ -13,7 +13,7 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Contains the SFTPCapabilities object"""
+"""Contains the SFTPDataStore object"""
 
 import stat
 import textwrap
@@ -33,12 +33,12 @@ from Common_Foundation import TextwrapEx
 from Common_Foundation.Types import overridemethod
 from Common_Foundation import Types
 
-from ..Capabilities.Capabilities import Capabilities, ItemType
+from .DataStore import DataStore, ItemType
 
 
 # ----------------------------------------------------------------------
-class SFTPCapabilities(Capabilities):
-    """Capabilities associated with a SFTP client"""
+class SFTPDataStore(DataStore):
+    """DataStore assessable via a SFTP server"""
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -52,7 +52,7 @@ class SFTPCapabilities(Capabilities):
         working_dir: Optional[Path]=None,
         *,
         port: int=SSH_PORT,
-    ) -> Iterator["SFTPCapabilities"]:
+    ) -> Iterator["SFTPDataStore"]:
         log_filename = Path("paramiko.log").resolve()
 
         paramiko.util.log_to_file(str(log_filename))  # type: ignore
@@ -171,6 +171,8 @@ class SFTPCapabilities(Capabilities):
         self,
         sftp_client: paramiko.SFTPClient,
     ):
+        super(SFTPDataStore, self).__init__()
+
         self._client                        = sftp_client
 
     # ----------------------------------------------------------------------
@@ -180,7 +182,7 @@ class SFTPCapabilities(Capabilities):
 
     # ----------------------------------------------------------------------
     @overridemethod
-    def ValidateMirrorInputs(
+    def ValidateBackupInputs(
         self,
         input_filename_or_dirs: List[Path],  # pylint: disable=unused-argument
     ) -> None:

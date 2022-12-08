@@ -16,28 +16,24 @@
 """Contains the Snapshot object"""
 
 import functools
-import hashlib
 import itertools
 import json
-import math
 
 from dataclasses import dataclass, field
-from enum import auto, Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Callable, cast, Dict, Generator, List, Optional, Tuple, Union
 
 from rich.progress import Progress, TimeElapsedColumn
 
-from Common_Foundation.ContextlibEx import ExitStack
 from Common_Foundation import PathEx
-from Common_Foundation.Shell.All import CurrentShell
-from Common_Foundation.Streams.Capabilities import Capabilities as StreamCapabilities
+from Common_Foundation.Streams.Capabilities import Capabilities
 from Common_Foundation.Streams.DoneManager import DoneManager
 
 from Common_FoundationEx import ExecuteTasks
 from Common_FoundationEx.InflectEx import inflect
 
-from .Capabilities.Capabilities import Capabilities, ItemType
+from .Common import CalculateHash, DiffOperation, DiffResult, DirHashPlaceholder, GetTaskDisplayName, EXECUTE_TASKS_REFRESH_PER_SECOND
+from .DataStores.DataStore import DataStore, ItemType
 
 
 # ----------------------------------------------------------------------
@@ -50,91 +46,6 @@ class Snapshot(object):
     # |  Public Types
     # |
     # ----------------------------------------------------------------------
-    @dataclass(frozen=True)
-    class DirHashPlaceholder(object):
-        """Object that signals that absence of a hash value because the associated item is a directory"""
-
-        # ----------------------------------------------------------------------
-        explicitly_added: bool              = field(kw_only=True)
-
-        # ----------------------------------------------------------------------
-        def __eq__(self, other) -> bool:
-            return isinstance(other, self.__class__)
-
-        # ----------------------------------------------------------------------
-        def __ne__(self, other) -> bool:
-            return not self == other
-
-        # ----------------------------------------------------------------------
-        def ToJson(self) -> Dict[str, Any]:
-            return {
-                "explicitly_added": self.explicitly_added,
-            }
-
-        # ----------------------------------------------------------------------
-        @classmethod
-        def FromJson(
-            cls,
-            value: Dict[str, Any],
-        ) -> "Snapshot.DirHashPlaceholder":
-            return cls(explicitly_added=value["explicitly_added"])
-
-    # ----------------------------------------------------------------------
-    class DiffOperation(Enum):
-        """Defines the cause of the diff"""
-
-        add                                 = auto()
-        remove                              = auto()
-        modify                              = auto()
-
-    # ----------------------------------------------------------------------
-    @dataclass(frozen=True)
-    class DiffResult(object):
-        """Represents a difference between a file at a source and destination"""
-
-        # ----------------------------------------------------------------------
-        operation: "Snapshot.DiffOperation"
-        path: Path
-
-        # Used when operation is [add, update]
-        this_hash: Union[None, str, "Snapshot.DirHashPlaceholder"]
-        this_file_size: Optional[int]
-
-        # Used when operation is [remove, update]
-        other_hash: Union[None, str, "Snapshot.DirHashPlaceholder"]
-        other_file_size: Optional[int]
-
-        # ----------------------------------------------------------------------
-        def __post_init__(self):
-            assert (
-                (self.operation == Snapshot.DiffOperation.add and self.this_hash is not None and self.other_hash is None)
-                or (self.operation == Snapshot.DiffOperation.modify and self.this_hash is not None and self.other_hash is not None)
-                or (self.operation == Snapshot.DiffOperation.remove and self.this_hash is None and self.other_hash is not None)
-            ), "Instance is in an inconsistent state"
-
-            assert (
-                (self.this_hash is None and self.this_file_size is None)
-                or (
-                    self.this_hash is not None
-                    and (
-                        (isinstance(self.this_hash, Snapshot.DirHashPlaceholder) and self.this_file_size is None)
-                        or (isinstance(self.this_hash, str) and self.this_file_size is not None)
-                    )
-                )
-            ), "'this' values are in an inconsistent state"
-
-            assert (
-                (self.other_hash is None and self.other_file_size is None)
-                or (
-                    self.other_hash is not None
-                    and (
-                        (isinstance(self.other_hash, Snapshot.DirHashPlaceholder) and self.other_file_size is None)
-                        or (isinstance(self.other_hash, str) and self.other_file_size is not None)
-                    )
-                )
-            ), "'other' values are in an inconsistent state"
-
-    # ----------------------------------------------------------------------
     @dataclass
     class Node(object):
         """Corresponds to a file or directory"""
@@ -143,7 +54,7 @@ class Snapshot(object):
         name: Optional[str]
         parent: Optional["Snapshot.Node"]               = field(compare=False)
 
-        hash_value: Union[str, "Snapshot.DirHashPlaceholder"]
+        hash_value: Union[str, DirHashPlaceholder]
         file_size: Optional[int]
 
         children: Dict[str, "Snapshot.Node"]            = field(init=False, default_factory=dict)
@@ -151,7 +62,7 @@ class Snapshot(object):
         # ----------------------------------------------------------------------
         @property
         def is_dir(self) -> bool:
-            return isinstance(self.hash_value, Snapshot.DirHashPlaceholder)
+            return isinstance(self.hash_value, DirHashPlaceholder)
 
         @property
         def is_file(self) -> bool:
@@ -181,7 +92,7 @@ class Snapshot(object):
             )
 
             assert (
-                (isinstance(self.hash_value, Snapshot.DirHashPlaceholder) and self.file_size is None)
+                (isinstance(self.hash_value, DirHashPlaceholder) and self.file_size is None)
                 or (isinstance(self.hash_value, str) and  self.file_size is not None and self.file_size >= 0)
             ), (self.hash_value, self.file_size)
 
@@ -193,7 +104,7 @@ class Snapshot(object):
             cls,
             values: Dict[Path, Optional[Tuple[str, int]]],
         ) -> "Snapshot.Node":
-            root = cls(None, None, Snapshot.DirHashPlaceholder(explicitly_added=False), None)
+            root = cls(None, None, DirHashPlaceholder(explicitly_added=False), None)
 
             for path, path_values in values.items():
                 if path_values is None:
@@ -222,7 +133,7 @@ class Snapshot(object):
             *,
             force: bool=False,
         ) -> "Snapshot.Node":
-            return self._AddImpl(path, Snapshot.DirHashPlaceholder(explicitly_added=True), None, force=force)
+            return self._AddImpl(path, DirHashPlaceholder(explicitly_added=True), None, force=force)
 
         # ----------------------------------------------------------------------
         def ToJson(self) -> Dict[str, Any]:
@@ -238,7 +149,7 @@ class Snapshot(object):
             else:
                 assert self.file_size is None
 
-                result["hash_value"] = self.hash_value.ToJson()
+                result["hash_value"] = None
                 result["children"] = {
                     k: v.ToJson()
                     for k, v in self.children.items()
@@ -259,7 +170,7 @@ class Snapshot(object):
             if isinstance(hash_value, str):
                 file_size = value["file_size"]
             else:
-                hash_value = Snapshot.DirHashPlaceholder.FromJson(hash_value)
+                hash_value = DirHashPlaceholder(explicitly_added=not value["children"])
                 file_size = None
 
             result = cls(name, parent, hash_value, file_size)
@@ -278,10 +189,10 @@ class Snapshot(object):
             other: Optional["Snapshot.Node"],
             file_compare_func: Callable[["Snapshot.Node", "Snapshot.Node"], bool],
         ) -> Tuple[
-            List["Snapshot.DiffResult"],
-            Optional["Snapshot.DiffOperation"],
+            List[DiffResult],
+            Optional[DiffOperation],
         ]:
-            diffs: List[Snapshot.DiffResult] = []
+            diffs: List[DiffResult] = []
 
             if other is None:
                 if self.is_dir and self.children:
@@ -290,8 +201,8 @@ class Snapshot(object):
 
                 else:
                     diffs.append(
-                        Snapshot.DiffResult(
-                            Snapshot.DiffOperation.add,
+                        DiffResult(
+                            DiffOperation.add,
                             self.fullpath,
                             self.hash_value,
                             self.file_size,
@@ -300,7 +211,7 @@ class Snapshot(object):
                         ),
                     )
 
-                return diffs, Snapshot.DiffOperation.add
+                return diffs, DiffOperation.add
 
             if self.is_file or other.is_file:
                 if self.is_file and other.is_file:
@@ -308,8 +219,8 @@ class Snapshot(object):
                         return [], None
 
                     diffs.append(
-                        Snapshot.DiffResult(
-                            Snapshot.DiffOperation.modify,
+                        DiffResult(
+                            DiffOperation.modify,
                             self.fullpath,
                             self.hash_value,
                             self.file_size,
@@ -320,8 +231,8 @@ class Snapshot(object):
                 else:
                     # The type has changed
                     diffs.append(
-                        Snapshot.DiffResult(
-                            Snapshot.DiffOperation.remove,
+                        DiffResult(
+                            DiffOperation.remove,
                             other.fullpath,
                             None,
                             None,
@@ -333,21 +244,21 @@ class Snapshot(object):
                     diffs += self.CreateDiffs(None, file_compare_func)[0]
 
                 assert diffs
-                return diffs, Snapshot.DiffOperation.modify
+                return diffs, DiffOperation.modify
 
             # We are looking at directories
-            atomic_result: Optional[Snapshot.DiffOperation] = None
+            atomic_result: Optional[DiffOperation] = None
 
             # ----------------------------------------------------------------------
             def UpdateAtomicResult(
-                result: Optional[Snapshot.DiffOperation],
+                result: Optional[DiffOperation],
             ) -> None:
                 nonlocal atomic_result
 
                 if atomic_result is None:
                     atomic_result = result
                 elif result != atomic_result:
-                    atomic_result = Snapshot.DiffOperation.modify
+                    atomic_result = DiffOperation.modify
 
             # ----------------------------------------------------------------------
 
@@ -356,8 +267,8 @@ class Snapshot(object):
                     continue
 
                 diffs.append(
-                    Snapshot.DiffResult(
-                        Snapshot.DiffOperation.remove,
+                    DiffResult(
+                        DiffOperation.remove,
                         other.fullpath / child_name,
                         None,
                         None,
@@ -366,7 +277,7 @@ class Snapshot(object):
                     ),
                 )
 
-                UpdateAtomicResult(Snapshot.DiffOperation.remove)
+                UpdateAtomicResult(DiffOperation.remove)
 
             for child_name, this_child in self.children.items():
                 child_diffs, child_result = this_child.CreateDiffs(
@@ -380,19 +291,19 @@ class Snapshot(object):
             # If all of the results are consistent, we can replace the diffs with a diff at
             # this level (unless this item has been explicitly added, in which case we should
             # keep it around).
-            if atomic_result == Snapshot.DiffOperation.remove:
-                assert isinstance(self.hash_value, Snapshot.DirHashPlaceholder)
-                assert isinstance(other.hash_value, Snapshot.DirHashPlaceholder)
+            if atomic_result == DiffOperation.remove:
+                assert isinstance(self.hash_value, DirHashPlaceholder)
+                assert isinstance(other.hash_value, DirHashPlaceholder)
 
                 if self.hash_value.explicitly_added or other.hash_value.explicitly_added:
                     # We don't want to remove the dir because it has been explicitly added.
                     # Keep the existing diffs and show that the node has been modified.
-                    atomic_result = Snapshot.DiffOperation.modify
+                    atomic_result = DiffOperation.modify
                 else:
                     # Replace the existing diffs with a single diff to remove this dir.
                     diffs = [
-                        Snapshot.DiffResult(
-                            Snapshot.DiffOperation.remove,
+                        DiffResult(
+                            DiffOperation.remove,
                             other.fullpath,
                             None,
                             None,
@@ -422,7 +333,7 @@ class Snapshot(object):
         def _AddImpl(
             self,
             path: Path,
-            hash_value: Union[str, "Snapshot.DirHashPlaceholder"],
+            hash_value: Union[str, DirHashPlaceholder],
             file_size: Optional[int],
             *,
             force: bool,
@@ -433,7 +344,7 @@ class Snapshot(object):
                 new_node = node.children.get(part, None)
 
                 if new_node is None:
-                    new_node = self.__class__(part, node, Snapshot.DirHashPlaceholder(explicitly_added=False), None)
+                    new_node = self.__class__(part, node, DirHashPlaceholder(explicitly_added=False), None)
                     node.children[part] = new_node
 
                 node = new_node
@@ -458,36 +369,12 @@ class Snapshot(object):
     # |  Public Methods
     # |
     # ----------------------------------------------------------------------
-    @staticmethod
-    def GetTaskDisplayName(
-        filename: Path,
-    ) -> str:
-        max_filename_length = 110
-
-        filename_str = str(filename)
-
-        if len(filename_str) <= max_filename_length:
-            filename_str = filename_str.ljust(max_filename_length)
-        else:
-            midpoint = int(math.floor(len(filename_str) / 2))
-            chars_to_trim = (len(filename_str) - max_filename_length + 3) / 2
-
-            filename_str = "{}...{}".format(
-                filename_str[:(midpoint - math.floor(chars_to_trim))],
-                filename_str[(midpoint + math.ceil(chars_to_trim)):],
-            )
-
-        assert len(filename_str) == max_filename_length, (len(filename_str), max_filename_length)
-
-        return filename_str
-
-    # ----------------------------------------------------------------------
     @classmethod
     def Calculate(
         cls,
         dm: DoneManager,
         inputs: List[Path],
-        capabilities: Capabilities,
+        data_store: DataStore,
         *,
         run_in_parallel: bool,
         quiet: bool=False,
@@ -503,7 +390,7 @@ class Snapshot(object):
         assert inputs
 
         for input_item in inputs:
-            item_type = capabilities.GetItemType(input_item)
+            item_type = data_store.GetItemType(input_item)
 
             if item_type != ItemType.File and item_type != ItemType.Dir:
                 raise Exception("'{}' is not a valid file or directory.".format(input_item))
@@ -573,12 +460,12 @@ class Snapshot(object):
                     filenames: List[Path] = []
                     empty_dirs: List[Path] = []
 
-                    input_item_type = capabilities.GetItemType(input_item)
+                    input_item_type = data_store.GetItemType(input_item)
 
                     if input_item_type == ItemType.File:
                         filenames.append(input_item)
                     elif input_item_type == ItemType.Dir:
-                        for root, directories, these_filenames in capabilities.Walk(input_item):
+                        for root, directories, these_filenames in data_store.Walk(input_item):
                             if not directories and not these_filenames:
                                 empty_dirs.append(root)
                                 continue
@@ -586,7 +473,7 @@ class Snapshot(object):
                             for this_filename in these_filenames:
                                 fullpath = root / this_filename
 
-                                if capabilities.GetItemType(fullpath) != ItemType.File:
+                                if data_store.GetItemType(fullpath) != ItemType.File:
                                     status.OnInfo("The file '{}' is not a supported item type.".format(fullpath))
                                     continue
 
@@ -600,7 +487,7 @@ class Snapshot(object):
 
                                 filenames.append(fullpath)
                     else:
-                        # By default, FileSystemCapabilities and SFTPCapabilities will not get here, as
+                        # By default, FileSystemDataStore and SFTPDataStore will not get here, as
                         # the will not traverse directory symlinks. Disable code coverage, but keep the
                         # error in the name of defense-in-depth.
                         raise Exception("'{}' is not a supported item type.".format(input_item))  # pragma: no cover
@@ -630,6 +517,7 @@ class Snapshot(object):
                 CalculatingFilesStep1,
                 quiet=quiet,
                 max_num_threads=None if run_in_parallel else 1,
+                refresh_per_second=EXECUTE_TASKS_REFRESH_PER_SECOND,
             )
 
             if calculating_dm.result != 0:
@@ -641,7 +529,7 @@ class Snapshot(object):
 
         if not any(input_info for input_info in all_input_infos.values()):
             return cls(
-                Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=False), None),
+                Snapshot.Node(None, None, DirHashPlaceholder(explicitly_added=False), None),
             )
 
         with dm.Nested(
@@ -658,43 +546,33 @@ class Snapshot(object):
                 def Step2(
                     status: ExecuteTasks.Status,
                 ) -> Tuple[Optional[Tuple[str, int]], Optional[str]]:
-                    if capabilities.GetItemType(input_item) is None:
+                    if data_store.GetItemType(input_item) is None:
                         status.OnInfo("'{}' no longer exists.".format(input_item))
                         return None, None
 
                     if not calculate_hashes:
                         hash_value = "ignored"
                     else:
-                        hasher = hashlib.sha512()
-                        bytes_hashed = 0
-
-                        with capabilities.Open(input_item, "rb") as f:
-                            while True:
-                                content = f.read(16384)
-                                if not content:
-                                    break
-
-                                hasher.update(content)
-                                bytes_hashed += len(content)
-
-                                status.OnProgress(bytes_hashed, None)
-
-                        hash_value = hasher.hexdigest()
+                        hash_value = CalculateHash(
+                            data_store,
+                            input_item,
+                            lambda bytes_hashed: cast(None, status.OnProgress(bytes_hashed, None)),
+                        )
 
                     return (
                         (
                             hash_value,
-                            capabilities.GetFileSize(input_item),
+                            data_store.GetFileSize(input_item),
                         ),
                         None,
                     )
 
                 # ----------------------------------------------------------------------
 
-                if capabilities.GetItemType(input_item) is None:
+                if data_store.GetItemType(input_item) is None:
                     file_size = None
                 else:
-                    file_size = capabilities.GetFileSize(input_item)
+                    file_size = data_store.GetFileSize(input_item)
 
                 return file_size, Step2
 
@@ -703,7 +581,7 @@ class Snapshot(object):
             file_infos: List[Optional[Tuple[str, int]]] = []
 
             tasks: List[ExecuteTasks.TaskData] = [
-                ExecuteTasks.TaskData(cls.GetTaskDisplayName(filename), filename)
+                ExecuteTasks.TaskData(GetTaskDisplayName(filename), filename)
                 for filename in itertools.chain(*(input_info.filenames for input_info in all_input_infos.values()))
             ]
 
@@ -715,14 +593,14 @@ class Snapshot(object):
                     CalculatingHashesStep2,
                     quiet=quiet,
                     max_num_threads=None if run_in_parallel else 1,
-                    refresh_per_second=4,
+                    refresh_per_second=EXECUTE_TASKS_REFRESH_PER_SECOND,
                 )
 
                 if hashes_dm.result != 0:
                     raise Exception("Errors encountered when hashing files.")
 
         with dm.Nested("\nOrganizing results..."):
-            root = Snapshot.Node(None, None, Snapshot.DirHashPlaceholder(explicitly_added=False), None)
+            root = Snapshot.Node(None, None, DirHashPlaceholder(explicitly_added=False), None)
 
             filename_offset = 0
 
@@ -747,18 +625,24 @@ class Snapshot(object):
     @classmethod
     def IsPersisted(
         cls,
-        capabilities: Capabilities,
+        data_store: DataStore,
+        *,
+        snapshot_filename: Optional[Path] = None
     ) -> bool:
-        return capabilities.GetItemType(Path(cls.PERSISTED_FILE_NAME)) == ItemType.File
+        snapshot_filename = snapshot_filename or Path(cls.PERSISTED_FILE_NAME)
+
+        return data_store.GetItemType(snapshot_filename) == ItemType.File
 
     # ----------------------------------------------------------------------
     @classmethod
     def LoadPersisted(
         cls,
         dm: DoneManager,
-        capabilities: Capabilities,
+        data_store: DataStore,
+        *,
+        snapshot_filename: Optional[Path]=None,
     ) -> "Snapshot":
-        snapshot_filename = Path(cls.PERSISTED_FILE_NAME)
+        snapshot_filename = snapshot_filename or Path(cls.PERSISTED_FILE_NAME)
 
         with dm.Nested("Reading '{}'...".format(snapshot_filename)) as reading_dm:
             content = bytes()
@@ -766,23 +650,21 @@ class Snapshot(object):
             with reading_dm.YieldStdout() as stdout_context:
                 stdout_context.persist_content = False
 
-                filename = Path(cls.PERSISTED_FILE_NAME)
-
                 with Progress(
                     *Progress.get_default_columns(),
                     TimeElapsedColumn(),
                     "{task.fields[status]}",
-                    console=StreamCapabilities.Get(stdout_context.stream).CreateRichConsole(stdout_context.stream),  # type: ignore
+                    console=Capabilities.Get(stdout_context.stream).CreateRichConsole(stdout_context.stream),  # type: ignore
                     transient=True,
                 ) as progress_bar:
                     total_progress_id = progress_bar.add_task(
                         "{}Total Progress".format(stdout_context.line_prefix),
-                        total=capabilities.GetFileSize(filename),
+                        total=data_store.GetFileSize(snapshot_filename),
                         status="",
                         visible=True,
                     )
 
-                    with capabilities.Open(filename, "rb") as source:
+                    with data_store.Open(snapshot_filename, "rb") as source:
                         while True:
                             chunk = source.read(16384)
                             if not chunk:
@@ -804,12 +686,14 @@ class Snapshot(object):
     def Persist(
         self,
         dm: DoneManager,
-        capabilities: Capabilities,
+        data_store: DataStore,
+        *,
+        snapshot_filename: Optional[Path]=None,
     ) -> None:
-        snapshot_filename = Path(self.__class__.PERSISTED_FILE_NAME)
+        snapshot_filename = snapshot_filename or Path(self.__class__.PERSISTED_FILE_NAME)
 
         with dm.Nested("Writing '{}'...".format(snapshot_filename)):
-            with capabilities.Open(snapshot_filename, "w") as f:
+            with data_store.Open(snapshot_filename, "w") as f:
                 json.dump(self.node.ToJson(), f)
 
     # ----------------------------------------------------------------------
@@ -818,7 +702,7 @@ class Snapshot(object):
         other: "Snapshot",
         *,
         compare_hashes: bool=True,
-    ) -> Generator["Snapshot.DiffResult", None, None]:
+    ) -> Generator[DiffResult, None, None]:
         """Enumerates the differences between two `Snapshot`s"""
 
         if compare_hashes:
