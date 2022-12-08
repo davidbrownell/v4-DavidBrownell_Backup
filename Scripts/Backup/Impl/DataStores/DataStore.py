@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |
-# |  Capabilities.py
+# |  DataStore.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2022-11-25 10:33:24
@@ -13,7 +13,7 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Contains the Capabilities object"""
+"""Contains the DataStore object"""
 
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -34,8 +34,16 @@ class ItemType(Enum):
 
 
 # ----------------------------------------------------------------------
-class Capabilities(ABC):
-    """Abstraction for file-system-like functionality"""
+class DataStore(ABC):
+    """Abstraction for systems that are able to store data"""
+
+    # ----------------------------------------------------------------------
+    def __init__(
+        self,
+        *,
+        is_local_filesystem: bool=False,
+    ):
+        self.is_local_filesystem            = is_local_filesystem
 
     # ----------------------------------------------------------------------
     @abstractmethod
@@ -45,7 +53,7 @@ class Capabilities(ABC):
 
     # ----------------------------------------------------------------------
     @abstractmethod
-    def ValidateMirrorInputs(
+    def ValidateBackupInputs(
         self,
         input_filename_or_dirs: List[Path],
     ) -> None:

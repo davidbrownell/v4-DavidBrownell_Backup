@@ -14,12 +14,12 @@
 # |
 # ----------------------------------------------------------------------
 """\
-Mirrors backup content: files created locally will be added to the backup location; files deleted
-locally will be removed from the backup location; files modified locally will be modified at the
-backup location.
+Mirrors backup content: files created locally will be added to the backup data store; files deleted
+locally will be removed from the backup data store; files modified locally will be modified at the
+backup data store.
 """
 
-import re
+import datetime
 import textwrap
 
 from pathlib import Path
@@ -32,11 +32,14 @@ from typer.core import TyperGroup
 from Common_Foundation.Streams.DoneManager import DoneManager, DoneManagerFlags
 from Common_Foundation import Types
 
-from Impl import Mirror  # type: ignore  # pylint: disable=import-error
+from Impl import Common                     # type: ignore  # pylint: disable=import-error
+from Impl import Mirror                     # type: ignore  # pylint: disable=import-error
+import command_line                         # type: ignore  # pylint: disable=import-error
 
 
 # ----------------------------------------------------------------------
 class NaturalOrderGrouper(TyperGroup):
+    # pylint: disable=missing-class-docstring
     # ----------------------------------------------------------------------
     def list_commands(self, *args, **kwargs):  # pylint: disable=unused-argument
         return self.commands.keys()
@@ -45,7 +48,6 @@ class NaturalOrderGrouper(TyperGroup):
 # ----------------------------------------------------------------------
 app                                         = typer.Typer(
     cls=NaturalOrderGrouper,
-    epilog=Mirror.GetDestinationHelp(),
     no_args_is_help=True,
     pretty_exceptions_show_locals=False,
     pretty_exceptions_enable=False,
@@ -53,44 +55,27 @@ app                                         = typer.Typer(
 
 
 # ----------------------------------------------------------------------
-_destination_argument                       = typer.Argument(..., help="Destination to mirror content or of previously mirrored content; see the comments below on the available destination formats.")
-_ssd_option                                 = typer.Option(False, "--ssd", help="Processes tasks in parallel to leverage the capabilities of solid-state-drives.")
-_quiet_option                               = typer.Option(False, "--quiet", help="Reduce the amount of information displayed.")
-
-
-# ----------------------------------------------------------------------
-def _ToRegex(
-    values: List[str],
-) -> List[Pattern]:
-    expressions: List[Pattern] = []
-
-    for value in values:
-        try:
-            expressions.append(re.compile("^{}$".format(value)))
-        except re.error as ex:
-            raise typer.BadParameter("The regular expression '{}' is not valid ({}).".format(value, ex))
-
-    return expressions
+_destination_argument                       = typer.Argument(..., help="Destination data store used when mirroring local content; see the comments below for information on the different data store destination formats.")
 
 
 # ----------------------------------------------------------------------
 @app.command(
     "execute",
-    epilog=Mirror.GetDestinationHelp(),
+    epilog=Common.GetDestinationHelp(),
     no_args_is_help=True,
 )
 def Execute(
     destination: str=_destination_argument,
-    input_filename_or_dirs: List[Path]=typer.Argument(..., exists=True, resolve_path=True, help="Input filename or directory."),
-    ssd: bool=_ssd_option,
-    force: bool=typer.Option(False, "--force", help="Overwrite all data at the destination."),
-    verbose: bool=typer.Option(False, "--verbose", help="Write verbose information to the terminal."),
-    quiet: bool=_quiet_option,
-    debug: bool=typer.Option(False, "--debug", help="Write debug information to the terminal."),
-    file_include_params: Optional[List[str]]=typer.Option(None, "--file-include", callback=_ToRegex, help="Regular expression used to include files and/or directories when mirroring content."),
-    file_exclude_params: Optional[List[str]]=typer.Option(None, "--file-exclude", callback=_ToRegex, help="Regular expression used to exclude files and/or directories when mirroring content."),
+    input_filename_or_dirs: List[Path]=command_line.input_filename_or_dirs_argument,
+    ssd: bool=command_line.ssd_option,
+    force: bool=command_line.force_option,
+    verbose: bool=command_line.verbose_option,
+    quiet: bool=command_line.quiet_option,
+    debug: bool=command_line.debug_option,
+    file_include_params: Optional[List[str]]=command_line.file_include_option,
+    file_exclude_params: Optional[List[str]]=command_line.file_exclude_option,
 ) -> None:
-    """Mirrors content to a backup location."""
+    """Mirrors content to a backup data store."""
 
     file_includes = cast(Optional[List[Pattern]], Types.EnsurePopulatedList(file_include_params))
     file_excludes = cast(Optional[List[Pattern]], Types.EnsurePopulatedList(file_exclude_params))
@@ -98,6 +83,8 @@ def Execute(
     with DoneManager.CreateCommandLine(
         output_flags=DoneManagerFlags.Create(verbose=verbose, debug=debug),
     ) as dm:
+        dm.WriteVerbose(str(datetime.datetime.now()) + "\n\n")
+
         Mirror.Backup(
             dm,
             destination,
@@ -122,21 +109,23 @@ def Execute(
             standard: Validates that files and directories at the destination exist and file sizes match the expected values.
             complete: Validates that files and directories at the destination exist and file hashes match the expected values.
         """,
-    ).replace("\n", "\n\n").format(Mirror.GetDestinationHelp()),
+    ).replace("\n", "\n\n").format(Common.GetDestinationHelp()),
 )
 def Validate(
     destination: str=_destination_argument,
-    validate_type: Mirror.ValidateType=typer.Argument(Mirror.ValidateType.standard, case_sensitive=False, help="Specifies the type of validation to use."),
-    ssd: bool=_ssd_option,
-    verbose: bool=typer.Option(False, "--verbose", help="Write verbose information to the terminal."),
-    quiet: bool=_quiet_option,
-    debug: bool=typer.Option(False, "--debug", help="Write debug information to the terminal."),
+    validate_type: Mirror.ValidateType=typer.Argument(Mirror.ValidateType.standard, case_sensitive=False, help="Specifies the type of validation to use; the the comments below for information on the different validation types."),
+    ssd: bool=command_line.ssd_option,
+    verbose: bool=command_line.verbose_option,
+    quiet: bool=command_line.quiet_option,
+    debug: bool=command_line.debug_option,
 ) -> None:
-    """Validates previously mirrored content at the backup location."""
+    """Validates previously mirrored content in the backup data store."""
 
     with DoneManager.CreateCommandLine(
         output_flags=DoneManagerFlags.Create(verbose=verbose, debug=debug),
     ) as dm:
+        dm.WriteVerbose(str(datetime.datetime.now()) + "\n\n")
+
         Mirror.Validate(
             dm,
             destination,
@@ -149,19 +138,21 @@ def Validate(
 # ----------------------------------------------------------------------
 @app.command(
     "cleanup",
-    epilog=Mirror.GetDestinationHelp(),
+    epilog=Common.GetDestinationHelp(),
     no_args_is_help=True,
 )
 def Cleanup(
     destination: str=_destination_argument,
-    verbose: bool=typer.Option(False, "--verbose", help="Write verbose information to the terminal."),
-    debug: bool=typer.Option(False, "--debug", help="Write debug information to the terminal."),
+    verbose: bool=command_line.verbose_option,
+    debug: bool=command_line.debug_option,
 ) -> None:
-    """Cleans a backup location after a mirror execution that was interrupted or that failed."""
+    """Cleans a backup data store after a mirror execution that was interrupted or that failed."""
 
     with DoneManager.CreateCommandLine(
         output_flags=DoneManagerFlags.Create(verbose=verbose, debug=debug),
     ) as dm:
+        dm.WriteVerbose(str(datetime.datetime.now()) + "\n\n")
+
         Mirror.Cleanup(dm, destination)
 
 
