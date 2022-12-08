@@ -23,7 +23,7 @@ on:
 
 jobs:
   _ee5e9719-d690-4256-adae-dd822c670556:
-    name: "Validate"
+    name: "Validate (target: ${{ github.base_ref }})"
     uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate.yaml@CI-latest
     with:
       repo_branch:                          ${{ github.head_ref }}
