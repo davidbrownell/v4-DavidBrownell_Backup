@@ -1103,6 +1103,43 @@ class TestRestore(object):
 # ----------------------------------------------------------------------
 class TestRestoreErrors(object):
     # ----------------------------------------------------------------------
+    def test_InvalidStore(self):
+        dm_and_sink = iter(GenerateDoneManagerAndSink())
+
+        Restore(
+            cast(DoneManager, next(dm_and_sink)),
+            "Test",
+            "fast_glacier://account@region",
+            None,
+            Path(),
+            {},
+            ssd=False,
+            quiet=False,
+            dry_run=False,
+            overwrite=False,
+        )
+
+        output = cast(str, next(dm_and_sink))
+
+        assert output == textwrap.dedent(
+            """\
+            Heading...
+              ERROR: 'fast_glacier://account@region' does not resolve to a file-based data store, which is required when restoring content.
+
+                     Most often, this error is encountered when attempting to restore an offsite backup that was
+                     originally transferred to a cloud-based data store.
+
+                     To restore these types of offsite backups, copy the content from the original data store
+                     to your local file system and run this script again while pointing to that
+                     location on your file system. This local directory should contain the primary directory
+                     created during the initial backup and all directories created as a part of subsequent backups.
+
+            DONE! (-1, <scrubbed duration>)
+            """,
+        )
+
+
+    # ----------------------------------------------------------------------
     def test_FilesInBackupContent(self, tmp_path_factory):
         temp_dir = tmp_path_factory.mktemp("backup_with_invalid_files") / "Backup"
 

@@ -33,11 +33,11 @@ from Common_Foundation import TextwrapEx
 from Common_Foundation.Types import overridemethod
 from Common_Foundation import Types
 
-from .DataStore import DataStore, ItemType
+from .FileBasedDataStore import FileBasedDataStore, ItemType
 
 
 # ----------------------------------------------------------------------
-class SFTPDataStore(DataStore):
+class SFTPDataStore(FileBasedDataStore):
     """DataStore assessable via a SFTP server"""
 
     # ----------------------------------------------------------------------
