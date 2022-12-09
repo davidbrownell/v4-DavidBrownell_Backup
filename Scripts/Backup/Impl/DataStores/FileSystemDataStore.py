@@ -26,11 +26,11 @@ from typing import Generator, List, Optional, Tuple
 from Common_Foundation import PathEx
 from Common_Foundation.Types import overridemethod
 
-from .DataStore import DataStore, ItemType
+from .FileBasedDataStore import FileBasedDataStore, ItemType
 
 
 # ----------------------------------------------------------------------
-class FileSystemDataStore(DataStore):
+class FileSystemDataStore(FileBasedDataStore):
     """DataStore associated with a standard, local file system"""
 
     # ----------------------------------------------------------------------

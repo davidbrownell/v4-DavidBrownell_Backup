@@ -318,6 +318,33 @@ class TestYieldDataStore(object):
 
             mocked_class.reset_mock()
 
+    # ----------------------------------------------------------------------
+    @mock.patch("Backup.Impl.Common.FastGlacierDataStore")
+    def test_FastGlacierDataStore(self, mocked_class):
+        for connection, account, region, working_dir in [
+            (
+                "fast_glacier://my_account@aws-1234",
+                "my_account",
+                "aws-1234",
+                Path(),
+            ),
+            (
+                "fast_glacier://account@us-west-2/Dir1/Dir2",
+                "account",
+                "us-west-2",
+                Path("Dir1/Dir2"),
+            ),
+        ]:
+            with YieldDataStore(mock.MagicMock(), connection, ssd=False):
+                pass
+
+            args, kwargs = mocked_class.call_args
+
+            assert args == (account, region, working_dir)
+            assert kwargs == {}
+
+            mocked_class.reset_mock()
+
 
 # ----------------------------------------------------------------------
 class TestCreateFilterFunc(object):

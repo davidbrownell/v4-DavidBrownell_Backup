@@ -34,6 +34,8 @@ from Common_FoundationEx import ExecuteTasks
 from Common_FoundationEx.InflectEx import inflect
 
 from .DataStores.DataStore import DataStore, ItemType
+from .DataStores.FileBasedDataStore import FileBasedDataStore
+from .DataStores.FastGlacierDataStore import FastGlacierDataStore
 from .DataStores.FileSystemDataStore import FileSystemDataStore
 from .DataStores.SFTPDataStore import SFTPDataStore, SSH_PORT
 
@@ -47,26 +49,38 @@ if TYPE_CHECKING:
 # |
 # ----------------------------------------------------------------------
 SFTP_TEMPLATE_REGEX                         = re.compile(
-    textwrap.dedent(
-        r"""(?#
-        Start                               )^(?#
-        Prefix                              )ftp:\/\/(?#
-        Username                            )(?P<username>[^\s:]+)(?#
+    r"""(?#
+    Start                                   )^(?#
+    Prefix                                  )ftp:\/\/(?#
+    Username                                )(?P<username>[^\s:]+)(?#
+    [sep]                                   ):(?#
+    Posix Private Key Path                  )(?P<password_or_private_key_path>[^@]+)(?#
+    [sep]                                   )@(?#
+    Host                                    )(?P<host>[^:\/]+)(?#
+    Port Group Begin                        )(?:(?#
         [sep]                               ):(?#
-        Posix Private Key Path              )(?P<password_or_private_key_path>[^@]+)(?#
-        [sep]                               )@(?#
-        Host                                )(?P<host>[^:\/]+)(?#
-        Port Group Begin                    )(?:(?#
-            [sep]                           ):(?#
-            Port                            )(?P<port>\d+)(?#
-        Port Group End                      ))?(?#
-        Working Group Begin                 )(?:(?#
-            [sep]                           )/(?#
-            Posix Working Dir               )(?P<working_dir>.+)(?#
-        Working Group End                   ))?(?#
-        End                                 )$(?#
-        )""",
-    ),
+        Port                                )(?P<port>\d+)(?#
+    Port Group End                          ))?(?#
+    Working Group Begin                     )(?:(?#
+        [sep]                               )\/(?#
+        Posix Working Dir                   )(?P<working_dir>.+)(?#
+    Working Group End                       ))?(?#
+    End                                     )$(?#
+    )""",
+)
+
+FAST_GLACIER_TEMPLATE_REGEX                 = re.compile(
+    r"""(?#
+    Start                                   )^(?#
+    Prefix                                  )fast_glacier:\/\/(?#
+    Account Name                            )(?P<account_name>[^@]+)(?#
+    [sep]                                   )@(?#
+    Region Name                             )(?P<aws_region>[^\/]+)(?#
+    Working Dir Begin                       )(?:(?#
+        [sep]                               )\/(?#
+        Posix Working Dir                   )(?P<working_dir>.+)(?#
+    Working Dir End                         ))?(?#
+    )""",
 )
 
 
@@ -255,11 +269,23 @@ def GetDestinationHelp() -> str:
             Format:
                 ftp://<username>:<password or posix path to private key>@<host>[:<port>][/<working_dir>]
 
-            Data Store Destination Examples:
+            Examples:
                 ftp://my_username:my_password@my_server.com
                 ftp://my_username:my_password@my_server.com/A/Working/Dir
                 ftp://my_username:/path/to/private/key@my_server.com
                 ftp://my_username:/path/to/private/key@my_server.com/A/Working/Dir
+
+        Fast Glacier
+        ------------
+        Write content using the Fast Glacier application (https://fastglacier.com/).
+
+            Format:
+                fast_glacier://<fast_glacier_account_name>@<aws_region>[/<glacier_dir>]
+
+            Examples:
+                fast_glacier://MyFastGlacierAccount@us-west-2
+                fast_glacier://MyFastGlacierAccount@us-west-2/Glacier/Dir
+
         """,
     ).replace("\n", "\n\n")
 
@@ -280,6 +306,7 @@ def YieldDataStore(
     ssd: bool,
 ) -> Iterator[DataStore]:
     if isinstance(destination, str):
+        # SFTP
         sftp_match = SFTP_TEMPLATE_REGEX.match(destination)
         if sftp_match:
             private_key_or_password = sftp_match.group("password_or_private_key_path")
@@ -304,6 +331,16 @@ def YieldDataStore(
             ) as data_store:
                 yield data_store
                 return
+
+        # Fast Glacier
+        fast_glacier_match = FAST_GLACIER_TEMPLATE_REGEX.match(destination)
+        if fast_glacier_match:
+            yield FastGlacierDataStore(
+                fast_glacier_match.group("account_name"),
+                fast_glacier_match.group("aws_region"),
+                Path(fast_glacier_match.group("working_dir") or ""),
+            )
+            return
 
     # Create a FileSystemDataStore instance
     is_local_filesystem_override_value_for_testing: Optional[bool] = None
@@ -546,7 +583,7 @@ def CreateDestinationPathFuncFactory() -> Callable[[Path, str], Path]:  # pragma
 # ----------------------------------------------------------------------
 def CopyLocalContent(
     dm: DoneManager,
-    destination_data_store: DataStore,
+    destination_data_store: FileBasedDataStore,
     diffs: Iterable[DiffResult],
     create_destination_path_func: Callable[[Path, str], Path],
     *,

@@ -23,7 +23,7 @@ import textwrap
 
 from io import StringIO
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Callable, cast, List, Tuple
 from unittest import mock
 
 import pytest
@@ -32,6 +32,7 @@ from Common_Foundation.ContextlibEx import ExitStack
 from Common_Foundation import PathEx
 from Common_Foundation.Streams.Capabilities import Capabilities
 from Common_Foundation.Streams.DoneManager import DoneManager
+from Common_Foundation.TestHelpers.StreamTestHelpers import GenerateDoneManagerAndSink
 
 
 # ----------------------------------------------------------------------
@@ -44,7 +45,6 @@ with ExitStack(lambda: sys.path.pop(0)):
 
 # Note that this exercises based functionality; ../IntegrationTests/Mirror_Test.py exercises
 # backups with changes to the file system over time.
-
 
 # ----------------------------------------------------------------------
 class TestFileSystemBackup(object):
@@ -701,6 +701,33 @@ class TestFileSystemBackup(object):
         )
 
     # ----------------------------------------------------------------------
+    def test_ErrorBulkStorage(self, _working_dir):
+        dm_and_sink = iter(GenerateDoneManagerAndSink())
+
+        Backup(
+            cast(DoneManager, next(dm_and_sink)),
+            "fast_glacier://account@region",
+            [_working_dir],
+            ssd=False,
+            force=False,
+            quiet=False,
+            file_includes=None,
+            file_excludes=None,
+        )
+
+        output = cast(str, next(dm_and_sink))
+
+        assert output == textwrap.dedent(
+            """\
+            Heading...
+              ERROR: 'fast_glacier://account@region' does not resolve to a file-based data store, which is required when mirroring content.
+            DONE! (-1, <scrubbed duration>)
+            """,
+        )
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @staticmethod
     @pytest.fixture()
     def _existing_content(tmp_path_factory, _working_dir) -> Tuple[Path, Path]:
@@ -836,6 +863,25 @@ class TestFileSystemCleanup(object):
                 match="'Content' is not a valid directory.",
             ):
                 Cleanup(dm, destination)
+
+    # ----------------------------------------------------------------------
+    def test_ErrorBulkStorage(self, _working_dir):
+        dm_and_sink = iter(GenerateDoneManagerAndSink())
+
+        Cleanup(
+            cast(DoneManager, next(dm_and_sink)),
+            "fast_glacier://account@region",
+        )
+
+        output = cast(str, next(dm_and_sink))
+
+        assert output == textwrap.dedent(
+            """\
+            Heading...
+              ERROR: 'fast_glacier://account@region' does not resolve to a file-based data store, which is required when mirroring content.
+            DONE! (-1, <scrubbed duration>)
+            """,
+        )
 
 
 # ----------------------------------------------------------------------
@@ -1348,6 +1394,29 @@ class TestFileSystemValidate(object):
             _working_dir,
             validate_type,
         )
+
+    # ----------------------------------------------------------------------
+    def test_ErrorBulkStorage(self, _working_dir):
+        dm_and_sink = iter(GenerateDoneManagerAndSink())
+
+        Validate(
+            cast(DoneManager, next(dm_and_sink)),
+            "fast_glacier://account@region",
+            ValidateType.standard,
+            ssd=False,
+            quiet=False,
+        )
+
+        output = cast(str, next(dm_and_sink))
+
+        assert output == textwrap.dedent(
+            """\
+            Heading...
+              ERROR: 'fast_glacier://account@region' does not resolve to a file-based data store, which is required when mirroring content.
+            DONE! (-1, <scrubbed duration>)
+            """,
+        )
+
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

@@ -42,7 +42,8 @@ from Common_Foundation import TextwrapEx
 from Common_FoundationEx import ExecuteTasks
 from Common_FoundationEx.InflectEx import inflect
 
-from .DataStores.DataStore import DataStore, ItemType
+from .DataStores.BulkStorageDataStore import BulkStorageDataStore
+from .DataStores.FileBasedDataStore import FileBasedDataStore, ItemType
 from .DataStores.FileSystemDataStore import FileSystemDataStore
 
 from . import Common
@@ -485,116 +486,132 @@ def Backup(
             destination,
             ssd=ssd,
         ) as destination_data_store:
-            destination_data_store.SetWorkingDir(Path(snapshot_filenames.backup_name))
+            if isinstance(destination_data_store, BulkStorageDataStore):
+                # We want to include the date-based directory in the upload, so upload the
+                # file content root parent rather than the file content root itself.
+                destination_data_store.Upload(
+                    dm,
+                    snapshot_filenames.backup_name,
+                    file_content_root.parent,
+                )
 
-            # Get the files
-            transfer_diffs: List[Common.DiffResult] = []
+            elif isinstance(destination_data_store, FileBasedDataStore):
+                destination_data_store.SetWorkingDir(Path(snapshot_filenames.backup_name))
 
-            for root, _, filenames in os.walk(file_content_root):
-                root = Path(root)
+                # Get the files
+                transfer_diffs: List[Common.DiffResult] = []
 
-                transfer_diffs += [
-                    Common.DiffResult(
-                        Common.DiffOperation.add,
-                        filename,
-                        "ignore",
-                        filename.stat().st_size,
-                        None,
-                        None,
+                for root, _, filenames in os.walk(file_content_root):
+                    root = Path(root)
+
+                    transfer_diffs += [
+                        Common.DiffResult(
+                            Common.DiffOperation.add,
+                            filename,
+                            "ignore",
+                            filename.stat().st_size,
+                            None,
+                            None,
+                        )
+                        for filename in [root / filename for filename in filenames]
+                    ]
+
+                Common.ValidateSizeRequirements(
+                    dm,
+                    file_content_data_store,
+                    destination_data_store,
+                    transfer_diffs,
+                    header="Validating destination size requirements...",
+                )
+
+                if dm.result != 0:
+                    return
+
+                dm.WriteLine("")
+
+                with dm.Nested(
+                    "Transferring content to the destination...",
+                    suffix="\n",
+                ) as transfer_dm:
+                    len_file_content_root_parts = len(file_content_root.parts)
+
+                    # ----------------------------------------------------------------------
+                    def StripPath(
+                        path: Path,
+                        extension: str,
+                    ) -> Path:
+                        assert len(path.parts) > len_file_content_root_parts
+                        assert path.parts[:len_file_content_root_parts] == file_content_root.parts, (path.parts, file_content_root.parts)
+
+                        return (
+                            Path(file_content_root.name)
+                            / Path(*path.parts[len_file_content_root_parts:-1])
+                            / (path.name + extension)
+                        )
+
+                    # ----------------------------------------------------------------------
+
+                    pending_items = Common.CopyLocalContent(
+                        transfer_dm,
+                        destination_data_store,
+                        transfer_diffs,
+                        StripPath,
+                        quiet=quiet,
+                        ssd=ssd,
                     )
-                    for filename in [root / filename for filename in filenames]
-                ]
 
-            Common.ValidateSizeRequirements(
-                dm,
-                file_content_data_store,
-                destination_data_store,
-                transfer_diffs,
-                header="Validating destination size requirements...",
-            )
+                    if transfer_dm.result != 0:
+                        return
+
+                    if not any(pending_item for pending_item in pending_items):
+                        transfer_dm.WriteError("No content was transferred.\n")
+                        return
+
+                with dm.Nested(
+                    "Committing content on the destination...",
+                    suffix="\n",
+                ) as commit_dm:
+                    # ----------------------------------------------------------------------
+                    def CommitContent(
+                        context: Path,
+                        on_simple_status_func: Callable[[str], None],  # pylint: disable=unused-argument
+                    ) -> Tuple[Optional[int], ExecuteTasks.TransformStep2FuncType[None]]:
+                        fullpath = context
+
+                        # ----------------------------------------------------------------------
+                        def Execute(
+                            status: ExecuteTasks.Status,  # pylint: disable=unused-argument
+                        ) -> Tuple[None, Optional[str]]:
+                            destination_data_store.Rename(fullpath, fullpath.with_suffix(""))
+                            return None, None
+
+                        # ----------------------------------------------------------------------
+
+                        return None, Execute
+
+                    # ----------------------------------------------------------------------
+
+                    ExecuteTasks.Transform(
+                        commit_dm,
+                        "Processing",
+                        [
+                            ExecuteTasks.TaskData(Common.GetTaskDisplayName(pending_item), pending_item)
+                            for pending_item in pending_items if pending_item
+                        ],
+                        CommitContent,
+                        quiet=quiet,
+                        max_num_threads=None if destination_data_store.ExecuteInParallel() else 1,
+                        refresh_per_second=Common.EXECUTE_TASKS_REFRESH_PER_SECOND,
+                    )
+
+                    if commit_dm.result != 0:
+                        return
+
+            else:
+                assert False, destination_data_store  # pragma: no cover
 
             if dm.result != 0:
                 return
-
-            dm.WriteLine("")
-
-            with dm.Nested(
-                "Transferring content to the destination...",
-                suffix="\n",
-            ) as transfer_dm:
-                len_file_content_root_parts = len(file_content_root.parts)
-
-                # ----------------------------------------------------------------------
-                def StripPath(
-                    path: Path,
-                    extension: str,
-                ) -> Path:
-                    assert len(path.parts) > len_file_content_root_parts
-                    assert path.parts[:len_file_content_root_parts] == file_content_root.parts, (path.parts, file_content_root.parts)
-
-                    return (
-                        Path(file_content_root.name)
-                        / Path(*path.parts[len_file_content_root_parts:-1])
-                        / (path.name + extension)
-                    )
-
-                # ----------------------------------------------------------------------
-
-                pending_items = Common.CopyLocalContent(
-                    transfer_dm,
-                    destination_data_store,
-                    transfer_diffs,
-                    StripPath,
-                    quiet=quiet,
-                    ssd=ssd,
-                )
-
-                if transfer_dm.result != 0:
-                    return
-
-                if not any(pending_item for pending_item in pending_items):
-                    transfer_dm.WriteError("No content was transferred.\n")
-                    return
-
-            with dm.Nested(
-                "Committing content on the destination...",
-                suffix="\n",
-            ) as commit_dm:
-                # ----------------------------------------------------------------------
-                def CommitContent(
-                    context: Path,
-                    on_simple_status_func: Callable[[str], None],  # pylint: disable=unused-argument
-                ) -> Tuple[Optional[int], ExecuteTasks.TransformStep2FuncType[None]]:
-                    fullpath = context
-
-                    # ----------------------------------------------------------------------
-                    def Execute(
-                        status: ExecuteTasks.Status,  # pylint: disable=unused-argument
-                    ) -> Tuple[None, Optional[str]]:
-                        destination_data_store.Rename(fullpath, fullpath.with_suffix(""))
-                        return None, None
-
-                    # ----------------------------------------------------------------------
-
-                    return None, Execute
-
-                # ----------------------------------------------------------------------
-
-                ExecuteTasks.Transform(
-                    commit_dm,
-                    "Processing",
-                    [
-                        ExecuteTasks.TaskData(Common.GetTaskDisplayName(pending_item), pending_item)
-                        for pending_item in pending_items if pending_item
-                    ],
-                    CommitContent,
-                    quiet=quiet,
-                    max_num_threads=None if destination_data_store.ExecuteInParallel() else 1,
-                    refresh_per_second=Common.EXECUTE_TASKS_REFRESH_PER_SECOND,
-                )
-
-                if commit_dm.result != 0:
-                    return
 
             if commit_pending_snapshot:
                 with dm.Nested("Committing snapshot locally...") as commit_dm:
@@ -625,7 +642,7 @@ def Commit(
 def Restore(
     dm: DoneManager,
     backup_name: str,
-    original_destination: str,
+    data_store_connection_string: str,
     encryption_password: Optional[str],
     working_dir: Path,
     dir_substitutions: Dict[str, str],
@@ -637,9 +654,28 @@ def Restore(
 ) -> None:
     with Common.YieldDataStore(
         dm,
-        original_destination,
+        data_store_connection_string,
         ssd=ssd,
     ) as data_store:
+        if not isinstance(data_store, FileBasedDataStore):
+            dm.WriteError(
+                textwrap.dedent(
+                    """\
+                    '{}' does not resolve to a file-based data store, which is required when restoring content.
+
+                    Most often, this error is encountered when attempting to restore an offsite backup that was
+                    originally transferred to a cloud-based data store.
+
+                    To restore these types of offsite backups, copy the content from the original data store
+                    to your local file system and run this script again while pointing to that
+                    location on your file system. This local directory should contain the primary directory
+                    created during the initial backup and all directories created as a part of subsequent backups.
+
+                    """,
+                ).format(data_store_connection_string),
+            )
+            return
+
         with _YieldTempDirectory("staging content") as staging_directory:
             # ----------------------------------------------------------------------
             @dataclass(frozen=True)
@@ -1272,7 +1308,7 @@ def _YieldTempDirectory(
 # ----------------------------------------------------------------------
 @contextmanager
 def _YieldRestoredArchive(
-    data_store: DataStore,
+    data_store: FileBasedDataStore,
     directory: str,
     status: Callable[[str], None],
 ) -> Iterator[

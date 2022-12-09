@@ -35,6 +35,7 @@ from Common_FoundationEx import ExecuteTasks
 from Common_FoundationEx.InflectEx import inflect
 
 from .DataStores.DataStore import DataStore, ItemType
+from .DataStores.FileBasedDataStore import FileBasedDataStore
 from .DataStores.FileSystemDataStore import FileSystemDataStore
 
 from . import Common
@@ -82,6 +83,10 @@ def Backup(
         destination,
         ssd=ssd,
     ) as destination_data_store:
+        if not isinstance(destination_data_store, FileBasedDataStore):
+            dm.WriteError("'{}' does not resolve to a file-based data store, which is required when mirroring content.\n".format(destination))
+            return
+
         destination_data_store.ValidateBackupInputs(input_filenames_or_dirs)
 
         # Load the local snapshot
@@ -373,6 +378,10 @@ def Cleanup(
         destination,
         ssd=False,
     ) as destination_data_store:
+        if not isinstance(destination_data_store, FileBasedDataStore):
+            dm.WriteError("'{}' does not resolve to a file-based data store, which is required when mirroring content.\n".format(destination))
+            return
+
         return _CleanupImpl(dm, destination_data_store)
 
 
@@ -390,6 +399,10 @@ def Validate(
         destination,
         ssd=ssd,
     ) as destination_data_store:
+        if not isinstance(destination_data_store, FileBasedDataStore):
+            dm.WriteError("'{}' does not resolve to a file-based data store, which is required when mirroring content.\n".format(destination))
+            return
+
         if not Snapshot.IsPersisted(destination_data_store):
             dm.WriteError("No snapshot was found.\n")
             return
@@ -498,7 +511,7 @@ def Validate(
 # ----------------------------------------------------------------------
 def _CleanupImpl(
     dm: DoneManager,
-    data_store: DataStore,
+    data_store: FileBasedDataStore,
 ) -> None:
     items_reverted = 0
 
