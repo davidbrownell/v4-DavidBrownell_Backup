@@ -497,8 +497,8 @@ class TestBackup(object):
                         however the changes have not been committed yet.
 
                         After the generated content is transferred to an offsite location, run this script
-                        again with the 'commit' command to ensure that these changes are not processed when
-                        this offsite backup is run again.
+                        again with the 'commit' command using the backup name 'BackupTest' to ensure that
+                        these changes are not processed when this offsite backup is run again.
 
 
                 DONE! (0, <scrubbed duration>)
@@ -603,8 +603,8 @@ class TestBackup(object):
                         however the changes have not been committed yet.
 
                         After the generated content is transferred to an offsite location, run this script
-                        again with the 'commit' command to ensure that these changes are not processed when
-                        this offsite backup is run again.
+                        again with the 'commit' command using the backup name 'BackupTest' to ensure that
+                        these changes are not processed when this offsite backup is run again.
 
 
                 DONE! (0, <scrubbed duration>)

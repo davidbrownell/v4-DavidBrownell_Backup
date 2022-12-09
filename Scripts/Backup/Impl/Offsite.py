@@ -224,16 +224,16 @@ def Backup(
                 """\
 
 
-                Content has been written to '{}',
+                Content has been written to '{{}}',
                 however the changes have not been committed yet.
 
                 After the generated content is transferred to an offsite location, run this script
-                again with the 'commit' command to ensure that these changes are not processed when
-                this offsite backup is run again.
+                again with the 'commit' command using the backup name '{}' to ensure that
+                these changes are not processed when this offsite backup is run again.
 
 
                 """,
-            )
+            ).format(backup_name)
 
         elif dm.result == 0:
             PathEx.RemoveTree(file_content_root)
@@ -252,8 +252,8 @@ def Backup(
         dm.WriteInfo(
             "\n" + template.format(
                 file_content_root if dm.capabilities.is_headless else TextwrapEx.CreateAnsiHyperLink(
-                    "file:///{}".format(file_content_root.as_posix()),
-                    str(file_content_root),
+                    "file:///{}".format(working_dir.as_posix()),
+                    str(working_dir),
                 ),
             ),
         )
