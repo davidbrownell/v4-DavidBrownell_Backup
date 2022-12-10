@@ -32,7 +32,6 @@ class BulkStorageDataStore(DataStore):
     def Upload(
         self,
         dm: DoneManager,
-        backup_name: str,
         local_path: Path,
     ) -> None:
         """Uploads all content in the provided path and its descendants"""
