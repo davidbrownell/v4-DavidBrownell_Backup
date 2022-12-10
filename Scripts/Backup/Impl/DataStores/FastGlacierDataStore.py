@@ -55,7 +55,6 @@ class FastGlacierDataStore(BulkStorageDataStore):
     def Upload(
         self,
         dm: DoneManager,
-        backup_name: str,
         local_path: Path,
     ) -> None:
         if self._validated_command_line is False:
@@ -78,7 +77,7 @@ class FastGlacierDataStore(BulkStorageDataStore):
                 account=self.account_name,
                 local_dir=local_path,
                 region=self.aws_region,
-                path=(self._glacier_dir / backup_name).as_posix(),
+                path=self._glacier_dir.as_posix(),
             )
 
             upload_dm.WriteVerbose("Command Line: {}\n\n".format(command_line))

@@ -489,11 +489,7 @@ def Backup(
             if isinstance(destination_data_store, BulkStorageDataStore):
                 # We want to include the date-based directory in the upload, so upload the
                 # file content root parent rather than the file content root itself.
-                destination_data_store.Upload(
-                    dm,
-                    snapshot_filenames.backup_name,
-                    file_content_root.parent,
-                )
+                destination_data_store.Upload(dm, file_content_root.parent)
 
             elif isinstance(destination_data_store, FileBasedDataStore):
                 destination_data_store.SetWorkingDir(Path(snapshot_filenames.backup_name))
