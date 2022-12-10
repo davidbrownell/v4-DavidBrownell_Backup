@@ -21,10 +21,48 @@ on:
       repo_branch:                          {type: string, required: true}
       bootstrap_branch_overrides:           {type: string, required: false}
 
+jobs:
+  _<<< guid() >>>:
+    name: "Build and Test: standard"
+
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-latest
+    with:
+      job_name_prefix:                      "DavidBrownell_Backup"
+      repo_name:                            davidbrownell/v4-DavidBrownell_Backup
+      repo_branch:                          ${{ inputs.repo_branch }}
+      bootstrap_branch_overrides:           ${{ inputs.bootstrap_branch_overrides }}
+
+      os:                                   ${{ matrix.os }}
+      configuration:                        standard
+
+      run_Builder:                          true
+      run_MatchTests:                       true
+
+      # Use the following values to control how different test types are run:
+      #
+      #   0: Do not run these test types
+      #   1: Run these test types without code coverage
+      #   2: Run these test types with code coverage
+      #   3: Run these test types with and without code coverage
+
+      execute_UnitTests:                    3
+      execute_FunctionalTests:              1
+      execute_IntegrationTests:             1
+      execute_SystemTests:                  1
+      execute_LocalEndToEndTests:           1
+      execute_EndToEndTests:                0
+      execute_BuildVerificationTests:       1
+      execute_PerformanceTests:             0
+
 # Note that we aren't using a matrix for the os here as we want to increase overall throughput
 # (rather than forcing the binary validation job to wait until all of the dev jobs are complete).
-
-jobs:
 <<%
   set os_values = [
     "macos-latest",
@@ -51,37 +89,6 @@ jobs:
       configuration:                        dev
 
       run_PylintVerifier:                   true
-      run_Builder:                          true
-      run_MatchTests:                       true
-
-      # Use the following values to control how different test types are run:
-      #
-      #   0: Do not run these test types
-      #   1: Run these test types without code coverage
-      #   2: Run these test types with code coverage
-      #   3: Run these test types with and without code coverage
-
-      execute_UnitTests:                    3
-      execute_FunctionalTests:              1
-      execute_IntegrationTests:             1
-      execute_SystemTests:                  1
-      execute_LocalEndToEndTests:           1
-      execute_EndToEndTests:                0
-      execute_BuildVerificationTests:       1
-      execute_PerformanceTests:             0
-
-  _<<< guid(os + "standard") >>>:
-    name: "Build and Test: standard"
-    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-latest
-    with:
-      job_name_prefix:                      "DavidBrownell_Backup"
-      repo_name:                            davidbrownell/v4-DavidBrownell_Backup
-      repo_branch:                          ${{ inputs.repo_branch }}
-      bootstrap_branch_overrides:           ${{ inputs.bootstrap_branch_overrides }}
-
-      os:                                   <<< os >>>
-      configuration:                        standard
-
       run_Builder:                          true
       run_MatchTests:                       true
 
