@@ -442,10 +442,7 @@ class TestBackup(object):
             assert len(_PathInfo.Create(helper.snapshot_dir).filenames) == 1
 
     # ----------------------------------------------------------------------
-    @pytest.mark.skipif(
-        CurrentShell.name == "Darwin",
-        reason="This test fails on Darwin, but works on Windows and Linux",
-    )
+    @pytest.mark.skipif(CurrentShell.family_name != "Windows", reason="This test is running into what I believe to be timing issues associated with the quick turnaround time on Linux and MacOS")
     def test_NoDestination(self, _working_dir, tmp_path_factory):
         with _YieldBackupHelper(tmp_path_factory) as helper:
             output = helper.ExecuteBackup(_working_dir, False, None, provide_destination=False)
