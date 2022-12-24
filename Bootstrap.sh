@@ -104,7 +104,6 @@ if [[ ${should_continue} == 1 ]]; then
         echo "DONE!"
         echo ""
 
-        "$1/Common/Foundation/Setup.sh" ${name_arg} ${no_hooks_arg} ${force_arg} ${verbose_arg} ${debug_arg}
     else
         echo "Updating Common_Foundation..."
         echo ""
@@ -117,6 +116,8 @@ if [[ ${should_continue} == 1 ]]; then
         echo "DONE!"
         echo ""
     fi
+
+    "$1/Common/Foundation/Setup.sh" ${name_arg} ${no_hooks_arg} ${force_arg} ${verbose_arg} ${debug_arg}
 
     # Write the environment activation and python execution statements to a temporary file
     # so that this environment remains unactivated. By doing this, the current script can be
@@ -133,8 +134,8 @@ if [[ ${should_continue} == 1 ]]; then
 #!/bin/bash
 set -e
 
-source "$1/Common/Foundation/${activate_cmd}" python310
-Enlist.sh EnlistAndSetup "${this_dir}" "$1" ${ARGS[@]}
+source "$1/Common/Foundation/${activate_cmd}" python310 ${force_arg} ${verbose_arg} ${debug_arg}
+Enlist.sh EnlistAndSetup "${this_dir}" "$1" ${no_hooks_arg} ${force_arg} ${verbose_arg} ${debug_arg} ${ARGS[@]}
 EOF
 
     chmod +x ../bootstrap_tmp.sh
