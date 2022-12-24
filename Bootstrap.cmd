@@ -129,7 +129,6 @@ if not exist "%_COMMON_CODE_ABSOLUTE_DIR%\Common\Foundation" (
     pushd "%_COMMON_CODE_ABSOLUTE_DIR%\Common\Foundation.tmp"
 
     git checkout tags/main_stable
-
     if %ERRORLEVEL% NEQ 0 (
         popd
         set _ERRORLEVEL=%ERRORLEVEL%
@@ -158,7 +157,6 @@ echo.
 pushd "%_COMMON_CODE_ABSOLUTE_DIR%\Common\Foundation"
 
 git fetch origin main_stable
-
 if %ERRORLEVEL% NEQ 0 (
     popd
     set _ERRORLEVEL=%ERRORLEVEL%
@@ -196,10 +194,10 @@ set _BOOTSTRAP_THIS_DIR=%_BOOTSTRAP_THIS_DIR:~0,-1%
 (
     echo @echo off
     echo.
-    echo call "%_COMMON_CODE_ABSOLUTE_DIR%\Common\Foundation\%_BOOTSTRAP_ACTIVATE_CMD%" python310
+    echo call "%_COMMON_CODE_ABSOLUTE_DIR%\Common\Foundation\%_BOOTSTRAP_ACTIVATE_CMD%" python310 %_FORCE_ARG% %_VERBOSE_ARG% %_DEBUG_ARG%
     echo if %%ERRORLEVEL%% NEQ 0 exit /B %%ERRORLEVEL%%
     echo.
-    echo call Enlist.cmd EnlistAndSetup "%_BOOTSTRAP_THIS_DIR%" "%_COMMON_CODE_ABSOLUTE_DIR%" %_BOOTSTRAP_CLA%
+    echo call Enlist.cmd EnlistAndSetup "%_BOOTSTRAP_THIS_DIR%" "%_COMMON_CODE_ABSOLUTE_DIR%" %_NO_HOOKS_ARG% %_FORCE_ARG% %_VERBOSE_ARG% %_DEBUG_ARG% %_BOOTSTRAP_CLA%
     echo if %%ERRORLEVEL%% NEQ 0 exit /B %%ERRORLEVEL%%
     echo.
 ) >..\Bootstrap.tmp.cmd

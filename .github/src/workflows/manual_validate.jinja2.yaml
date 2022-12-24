@@ -18,6 +18,9 @@ run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name 
 
 on:
   workflow_dispatch:
+    inputs:
+      force_setup:                          {type: boolean, required: false, default: false, description: "Apply the '--force' flag during setup activities."}
+      force_activate:                       {type: boolean, required: false, default: false, description: "Apply the '--force' flag during activation activities."}
 
 jobs:
   _36ae5b87-cc37-467b-8aab-bfff6178f8bb:
@@ -25,3 +28,5 @@ jobs:
     uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate.yaml@CI-latest
     with:
       repo_branch:                          ${{ github.ref_name }}
+      force_setup:                          ${{ inputs.force_setup }}
+      force_activate:                       ${{ inputs.force_activate }}

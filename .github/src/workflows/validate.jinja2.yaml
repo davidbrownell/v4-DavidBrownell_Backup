@@ -19,6 +19,9 @@ on:
   workflow_call:
     inputs:
       repo_branch:                          {type: string, required: true}
+      force_setup:                          {type: boolean, required: false, default: false}
+      force_activate:                       {type: boolean, required: false, default: false}
+
       bootstrap_branch_overrides:           {type: string, required: false}
 
 jobs:
@@ -32,7 +35,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
 
-    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-ExperimentalCache # TODO: CI-latest
     with:
       job_name_prefix:                      "DavidBrownell_Backup"
       repo_name:                            davidbrownell/v4-DavidBrownell_Backup
@@ -44,6 +47,9 @@ jobs:
 
       run_Builder:                          true
       run_MatchTests:                       true
+
+      force_setup:                          ${{ inputs.force_setup }}
+      force_activate:                       ${{ inputs.force_activate }}
 
       # Use the following values to control how different test types are run:
       #
@@ -78,7 +84,7 @@ jobs:
   # ----------------------------------------------------------------------
   _<<< guid(os + "dev") >>>:
     name: "Build and Test: dev"
-    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-ExperimentalCache # TODO: CI-latest
     with:
       job_name_prefix:                      "DavidBrownell_Backup"
       repo_name:                            davidbrownell/v4-DavidBrownell_Backup
@@ -91,6 +97,9 @@ jobs:
       run_PylintVerifier:                   true
       run_Builder:                          true
       run_MatchTests:                       true
+
+      force_setup:                          ${{ inputs.force_setup }}
+      force_activate:                       ${{ inputs.force_activate }}
 
       # Use the following values to control how different test types are run:
       #
