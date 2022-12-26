@@ -21,6 +21,7 @@ on:
       repo_branch:                          {type: string, required: true}
       force_setup:                          {type: boolean, required: false, default: false}
       force_activate:                       {type: boolean, required: false, default: false}
+      no_cache:                             {type: boolean, required: false, default: false}
 
       bootstrap_branch_overrides:           {type: string, required: false}
 
@@ -50,6 +51,7 @@ jobs:
 
       force_setup:                          ${{ inputs.force_setup }}
       force_activate:                       ${{ inputs.force_activate }}
+      no_cache:                             ${{ inputs.no_cache }}
 
       # Use the following values to control how different test types are run:
       #
@@ -100,6 +102,7 @@ jobs:
 
       force_setup:                          ${{ inputs.force_setup }}
       force_activate:                       ${{ inputs.force_activate }}
+      no_cache:                             ${{ inputs.no_cache }}
 
       # Use the following values to control how different test types are run:
       #
