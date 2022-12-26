@@ -18,7 +18,7 @@ run-name: ${{ github.run_number }} [${{ github.actor }}] on ${{ github.ref_name 
 
 on:
   schedule:
-    - cron: '0 9 * * *' # Once a day at 9am UTC
+    - cron: '0 0 * * *' # Once a day at 12am UTC
 
 jobs:
   _3e28bda8-e0ea-480f-9a2f-e002c6220f07:
