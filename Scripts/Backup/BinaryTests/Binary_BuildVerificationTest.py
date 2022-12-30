@@ -55,10 +55,10 @@ def EntryPoint(
 
     # Get the Backup binary
     for potential_dir in [
+        "artifacts",
         "Scripts",
         "Backup",
         "Build",
-        "artifacts",
     ]:
         potential_build_output_dir = build_output_dir / potential_dir
         if not potential_build_output_dir.is_dir():

@@ -26,6 +26,7 @@ on:
       bootstrap_branch_overrides:           {type: string, required: false}
 
 jobs:
+  # ----------------------------------------------------------------------
   _<<< guid() >>>:
     name: "Build and Test: standard"
 
@@ -36,22 +37,22 @@ jobs:
           - ubuntu-latest
           - windows-latest
 
-    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-ExperimentalCache # TODO: CI-latest
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-latest
     with:
-      job_name_prefix:                      "DavidBrownell_Backup"
-      repo_name:                            davidbrownell/v4-DavidBrownell_Backup
-      repo_branch:                          ${{ inputs.repo_branch }}
-      bootstrap_branch_overrides:           ${{ inputs.bootstrap_branch_overrides }}
+      job_name_prefix: "DavidBrownell_Backup"
+      repo_name: davidbrownell/v4-DavidBrownell_Backup
+      repo_branch: ${{ inputs.repo_branch }}
+      bootstrap_branch_overrides: ${{ inputs.bootstrap_branch_overrides }}
 
-      os:                                   ${{ matrix.os }}
-      configuration:                        standard
+      os: ${{ matrix.os }}
+      configuration: standard
 
-      run_Builder:                          true
-      run_MatchTests:                       true
+      run_Builder: true
+      run_MatchTests: true
 
-      force_setup:                          ${{ inputs.force_setup }}
-      force_activate:                       ${{ inputs.force_activate }}
-      no_cache:                             ${{ inputs.no_cache }}
+      force_setup: ${{ inputs.force_setup }}
+      force_activate: ${{ inputs.force_activate }}
+      no_cache: ${{ inputs.no_cache }}
 
       # Use the following values to control how different test types are run:
       #
@@ -60,14 +61,14 @@ jobs:
       #   2: Run these test types with code coverage
       #   3: Run these test types with and without code coverage
 
-      execute_UnitTests:                    3
-      execute_FunctionalTests:              1
-      execute_IntegrationTests:             1
-      execute_SystemTests:                  1
-      execute_LocalEndToEndTests:           1
-      execute_EndToEndTests:                0
-      execute_BuildVerificationTests:       1
-      execute_PerformanceTests:             0
+      execute_UnitTests: 3
+      execute_FunctionalTests: 1
+      execute_IntegrationTests: 1
+      execute_SystemTests: 1
+      execute_LocalEndToEndTests: 1
+      execute_EndToEndTests: 0
+      execute_BuildVerificationTests: 1
+      execute_PerformanceTests: 0
 
 # Note that we aren't using a matrix for the os here as we want to increase overall throughput
 # (rather than forcing the binary validation job to wait until all of the dev jobs are complete).
@@ -86,23 +87,23 @@ jobs:
   # ----------------------------------------------------------------------
   _<<< guid(os + "dev") >>>:
     name: "Build and Test: dev"
-    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-ExperimentalCache # TODO: CI-latest
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-latest
     with:
-      job_name_prefix:                      "DavidBrownell_Backup"
-      repo_name:                            davidbrownell/v4-DavidBrownell_Backup
-      repo_branch:                          ${{ inputs.repo_branch }}
-      bootstrap_branch_overrides:           ${{ inputs.bootstrap_branch_overrides }}
+      job_name_prefix: "DavidBrownell_Backup"
+      repo_name: davidbrownell/v4-DavidBrownell_Backup
+      repo_branch: ${{ inputs.repo_branch }}
+      bootstrap_branch_overrides: ${{ inputs.bootstrap_branch_overrides }}
 
-      os:                                   <<< os >>>
-      configuration:                        dev
+      os: <<< os >>>
+      configuration: dev
 
-      run_PylintVerifier:                   true
-      run_Builder:                          true
-      run_MatchTests:                       true
+      run_PylintVerifier: true
+      run_Builder: true
+      run_MatchTests: true
 
-      force_setup:                          ${{ inputs.force_setup }}
-      force_activate:                       ${{ inputs.force_activate }}
-      no_cache:                             ${{ inputs.no_cache }}
+      force_setup: ${{ inputs.force_setup }}
+      force_activate: ${{ inputs.force_activate }}
+      no_cache: ${{ inputs.no_cache }}
 
       # Use the following values to control how different test types are run:
       #
@@ -111,18 +112,19 @@ jobs:
       #   2: Run these test types with code coverage
       #   3: Run these test types with and without code coverage
 
-      execute_UnitTests:                    3
-      execute_FunctionalTests:              1
-      execute_IntegrationTests:             1
-      execute_SystemTests:                  1
-      execute_LocalEndToEndTests:           1
-      execute_EndToEndTests:                0
-      execute_BuildVerificationTests:       1
-      execute_PerformanceTests:             0
+      execute_UnitTests: 3
+      execute_FunctionalTests: 1
+      execute_IntegrationTests: 1
+      execute_SystemTests: 1
+      execute_LocalEndToEndTests: 1
+      execute_EndToEndTests: 0
+      execute_BuildVerificationTests: 1
+      execute_PerformanceTests: 0
 
+  # ----------------------------------------------------------------------
   _<<< guid() >>>:
     name: "DavidBrownell_Backup (<<< os >>>, dev binaries)"
-    runs-on:                                <<< os >>>
+    runs-on: <<< os >>>
     needs:
       - _<<< guid(os + "dev") >>>
 
@@ -132,48 +134,50 @@ jobs:
         uses: davidbrownell/v4-Common_Foundation/.github/actions/dump_contexts@CI-v1
 
       # outputs:
+      #   - github_workspace
       #   - local_script_prefix
       #   - script_extension
       #   - shell_name
       #   - source_command
       #   - sudo_command
-      #   - working_dir
       #
       - name: "[Impl] Initialize OS-Specific Variables"
         id: initialize
         uses: davidbrownell/v4-Common_Foundation/.github/actions/initialize@CI-v1
         with:
-          os:                               <<< os >>>
+          os: <<< os >>>
 
       # outputs:
       #   - archive_prefix
-      #   - repo_name
       #   - repo_dir
+      #   - repo_dependencies_dir
       #
       - name: Checkout Source
         id: checkout_source
         uses: davidbrownell/v4-Common_Foundation/.github/actions/checkout_source@CI-v1
         with:
-          repo_name:                        davidbrownell/v4-DavidBrownell_Backup
-          repo_branch:                      ${{ inputs.repo_branch }}
+          repo_name: davidbrownell/v4-DavidBrownell_Backup
+          repo_branch: ${{ inputs.repo_branch }}
 
-          os:                               <<< os >>>
-          configuration:                    dev
+          os: <<< os >>>
+          configuration: dev
 
-          shell_name:                       ${{ steps.initialize.outputs.shell_name }}
-          working_dir:                      ${{ steps.initialize.outputs.working_dir }}
+          shell_name: ${{ steps.initialize.outputs.shell_name }}
 
+      # outputs:
+      #   - artifacts_dir
+      #
       - name: Unbundle Build Artifacts
         id: unbundle
         uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-latest
         with:
-          archive_prefix:                   ${{ steps.checkout_source.outputs.archive_prefix }}
-          artifacts_path:                   Scripts/Backup/Build
+          archive_prefix: ${{ steps.checkout_source.outputs.archive_prefix }}
+          artifacts_path: Scripts/Backup/Build
 
-          os:                               <<< os >>>
+          os: <<< os >>>
 
-          shell_name:                       ${{ steps.initialize.outputs.shell_name }}
-          working_dir:                      ${{ steps.initialize.outputs.working_dir }}
+          shell_name: ${{ steps.initialize.outputs.shell_name }}
+          working_dir: ${{ steps.initialize.outputs.github_workspace }}/artifacts
 
       - name: Run Test
         run: |
