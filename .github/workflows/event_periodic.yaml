@@ -45,7 +45,7 @@ jobs:
 
   _a639e393-962d-4fb2-8b6d-19e4bdc3cf88:
     name: "Validate with Dependencies (${{ github.ref_name }})"
-    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate_with_dependencies@CI-latest
+    uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate_with_dependencies.yaml@CI-latest
     with:
       repo_branch: ${{ github.ref_name }}
 
