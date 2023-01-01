@@ -32,7 +32,7 @@ from Common_Foundation.Streams.DoneManager import DoneManager
 from Common_FoundationEx import ExecuteTasks
 from Common_FoundationEx.InflectEx import inflect
 
-from .Common import CalculateHash, DiffOperation, DiffResult, DirHashPlaceholder, GetTaskDisplayName, EXECUTE_TASKS_REFRESH_PER_SECOND
+from .Common import CalculateHash, DiffOperation, DiffResult, DirHashPlaceholder, EXECUTE_TASKS_REFRESH_PER_SECOND
 from .DataStores.DataStore import DataStore, ItemType
 
 
@@ -581,7 +581,7 @@ class Snapshot(object):
             file_infos: List[Optional[Tuple[str, int]]] = []
 
             tasks: List[ExecuteTasks.TaskData] = [
-                ExecuteTasks.TaskData(GetTaskDisplayName(filename), filename)
+                ExecuteTasks.TaskData(str(filename), filename)
                 for filename in itertools.chain(*(input_info.filenames for input_info in all_input_infos.values()))
             ]
 

@@ -172,6 +172,12 @@ def _ValidateMirror(
     source_files = GetFiles(source_dir)
     destination_files = GetFiles(destination / "Content", source_dir)
 
+    if source_files != destination_files:
+        sys.stdout.write("Source Files:\n{}\n".format("".join("  - {}) {}\n".format(index, source_file) for index, source_file in enumerate(source_files))))
+        sys.stdout.write("Destination Files:\n{}\n".format("".join("  - {}) {}\n".format(index, destination_file) for index, destination_file in enumerate(destination_files))))
+
+        return -1
+
     return 0
 
 

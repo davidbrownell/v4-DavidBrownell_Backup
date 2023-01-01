@@ -159,17 +159,11 @@ class TestFileSystemBackup(object):
                     Heading...
                       Creating the local snapshot...
                         Discovering files...
-                          Processing 1 item...
-
-
-                          DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                          Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
                         Calculating hashes...
-                          Processing 9 items...
-
-
-                          DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                          Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>)
 
                         Organizing results...DONE! (0, <scrubbed duration>)
@@ -181,10 +175,7 @@ class TestFileSystemBackup(object):
                         Validating size requirements...DONE! (0, <scrubbed duration>, <scrubbed space required>, <scrubbed space available>)
 
                         Preserving files...
-                          Processing 9 items...
-
-
-                          DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                          Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>)
 
                         Preserving index...DONE! (0, <scrubbed duration>)
@@ -194,27 +185,18 @@ class TestFileSystemBackup(object):
                       Validating destination size requirements...DONE! (0, <scrubbed duration>, <scrubbed space required>, <scrubbed space available>)
 
                       Transferring content to the destination...
-                        Processing 11 items...
-
-
-                        DONE! (0, <scrubbed duration>, 11 items succeeded, no items with errors, no items with warnings)
+                        Processing 11 items...DONE! (0, <scrubbed duration>, 11 items succeeded, no items with errors, no items with warnings)
                       DONE! (0, <scrubbed duration>)
 
                       Committing content on the destination...
-                        Processing 11 items...
-
-
-                        DONE! (0, <scrubbed duration>, 11 items succeeded, no items with errors, no items with warnings)
+                        Processing 11 items...DONE! (0, <scrubbed duration>, 11 items succeeded, no items with errors, no items with warnings)
                       DONE! (0, <scrubbed duration>)
 
                       Committing snapshot locally...
                         Writing '{snapshot_destination}{sep}OffsiteBackup.TestBackup.json'...DONE! (0, <scrubbed duration>)
                       DONE! (0, <scrubbed duration>)
                       Processing file content...
-                        Processing 1 item...
-
-
-                        DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                        Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                         Staging working content...
                           Processing '<Folder0>' (1 of 1)...DONE! (0, <scrubbed duration>, 10 instructions added)
                         DONE! (0, <scrubbed duration>)
@@ -272,17 +254,11 @@ class TestFileSystemBackup(object):
                     Heading...
                       Creating the local snapshot...
                         Discovering files...
-                          Processing 1 item...
-
-
-                          DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                          Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
                         Calculating hashes...
-                          Processing 9 items...
-
-
-                          DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                          Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>)
 
                         Organizing results...DONE! (0, <scrubbed duration>)
@@ -298,10 +274,7 @@ class TestFileSystemBackup(object):
                       Calculating diffs...DONE! (0, <scrubbed duration>, no diffs found)
 
                       Processing file content...
-                        Processing 1 item...
-
-
-                        DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                        Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                         Staging working content...
                           Processing '<Folder0>' (1 of 1)...DONE! (0, <scrubbed duration>, 10 instructions added)
                         DONE! (0, <scrubbed duration>)

@@ -291,13 +291,6 @@ def GetDestinationHelp() -> str:
 
 
 # ----------------------------------------------------------------------
-def GetTaskDisplayName(
-    filename: Path,
-) -> str:
-    return TextwrapEx.BoundedLJust(str(filename), 100)
-
-
-# ----------------------------------------------------------------------
 @contextmanager
 def YieldDataStore(
     dm: DoneManager,
@@ -640,7 +633,7 @@ def CopyLocalContent(
         dm,
         "Processing",
         [
-            ExecuteTasks.TaskData(GetTaskDisplayName(diff.path), diff)
+            ExecuteTasks.TaskData(str(diff.path), diff)
             for diff in diffs
         ],
         Add,
