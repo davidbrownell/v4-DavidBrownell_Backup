@@ -351,7 +351,7 @@ def Backup(
                             preserve_dm,
                             "Processing",
                             [
-                                ExecuteTasks.TaskData(Common.GetTaskDisplayName(diff.path), diff)
+                                ExecuteTasks.TaskData(str(diff.path), diff)
                                 for diff in diffs_to_process
                             ],
                             Move,
@@ -591,7 +591,7 @@ def Backup(
                         commit_dm,
                         "Processing",
                         [
-                            ExecuteTasks.TaskData(Common.GetTaskDisplayName(pending_item), pending_item)
+                            ExecuteTasks.TaskData(str(pending_item), pending_item)
                             for pending_item in pending_items if pending_item
                         ],
                         CommitContent,
@@ -912,7 +912,7 @@ def Restore(
                     preprocess_dm,
                     "Processing",
                     [
-                        ExecuteTasks.TaskData(directory, directory)
+                        ExecuteTasks.TaskData(str(directory), directory)
                         for directory in directories
                     ],
                     ProcessDirectory,

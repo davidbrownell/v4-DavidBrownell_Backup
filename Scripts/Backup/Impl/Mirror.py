@@ -261,7 +261,7 @@ def Backup(
                             this_dm,
                             "Processing",
                             [
-                                ExecuteTasks.TaskData(Common.GetTaskDisplayName(diff.path), diff.path)
+                                ExecuteTasks.TaskData(str(diff.path), diff.path)
                                 for diff in itertools.chain(
                                     diffs[Common.DiffOperation.modify],
                                     diffs[Common.DiffOperation.remove],
@@ -345,7 +345,7 @@ def Backup(
                                     this_dm,
                                     "Processing",
                                     [
-                                        ExecuteTasks.TaskData(Common.GetTaskDisplayName(fullpath), fullpath)
+                                        ExecuteTasks.TaskData(str(fullpath), fullpath)
                                         for fullpath in items if fullpath
                                     ],
                                     CommitImpl,

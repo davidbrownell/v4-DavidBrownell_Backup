@@ -200,13 +200,6 @@ def test_GetDestinationHelp():
 
 
 # ----------------------------------------------------------------------
-def test_GetTaskDisplayName():
-    assert GetTaskDisplayName(Path("0123456789")) ==                                                                                                                  "0123456789                                                                                          "
-    assert GetTaskDisplayName(Path("012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789")) ==    "012345678901234567890123456789012345678901234567...1234567890123456789012345678901234567890123456789"
-    assert GetTaskDisplayName(Path("012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789_")) ==   "012345678901234567890123456789012345678901234567...234567890123456789012345678901234567890123456789_"
-
-
-# ----------------------------------------------------------------------
 class TestYieldDataStore(object):
     # ----------------------------------------------------------------------
     @mock.patch("Backup.Impl.Common.FileSystemDataStore")
@@ -814,10 +807,7 @@ class TestCopyLocalContent(object):
         assert sink == textwrap.dedent(
             """\
             Heading...
-              Processing 5 items...
-
-
-              DONE! (0, <scrubbed duration>, 5 items succeeded, no items with errors, no items with warnings)
+              Processing 5 items...DONE! (0, <scrubbed duration>, 5 items succeeded, no items with errors, no items with warnings)
             DONE! (0, <scrubbed duration>)
             """,
         )
