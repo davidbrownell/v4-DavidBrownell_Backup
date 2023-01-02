@@ -7,7 +7,7 @@
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2022
+# |  Copyright David Brownell 2022-23
 # |  Distributed under the Boost Software License, Version 1.0. See
 # |  accompanying file LICENSE_1_0.txt or copy at
 # |  http://www.boost.org/LICENSE_1_0.txt.
@@ -69,11 +69,12 @@ setup(
             base=None,
             copyright=textwrap.dedent(
                 """\
-                Copyright David Brownell 2022{year_suffix}
+                Copyright David Brownell {year}{year_suffix}
                 Distributed under the Boost Software License, Version 1.0. See
                 copy at http://www.boost.org/LICENSE_1_0.txt.
                 """,
             ).format(
+                year="2022", # Formatted in this way as to not participate in updates via the UpdateCopyrights script
                 year_suffix=_year_suffix,
             ),
             # icon=<icon_filename>
