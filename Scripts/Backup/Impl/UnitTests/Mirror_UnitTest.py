@@ -938,11 +938,11 @@ class TestFileSystemValidate(object):
 
                       Extracting files...
                         Discovering files...
-                          Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                          Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
                         {}
-                          Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                          Processing (9 items)...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>)
 
                         Organizing results...DONE! (0, <scrubbed duration>)
@@ -990,11 +990,11 @@ class TestFileSystemValidate(object):
 
                   Extracting files...
                     Discovering files...
-                      Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                      Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 11 files found, 0 empty directories found)
 
                     {hash_header}
-                      Processing 11 items...DONE! (0, <scrubbed duration>, 11 items succeeded, no items with errors, no items with warnings)
+                      Processing (11 items)...DONE! (0, <scrubbed duration>, 11 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Organizing results...DONE! (0, <scrubbed duration>)
@@ -1045,11 +1045,11 @@ class TestFileSystemValidate(object):
 
                   Extracting files...
                     Discovering files...
-                      Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                      Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 8 files found, 1 empty directory found)
 
                     {hash_header}
-                      Processing 8 items...DONE! (0, <scrubbed duration>, 8 items succeeded, no items with errors, no items with warnings)
+                      Processing (8 items)...DONE! (0, <scrubbed duration>, 8 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Organizing results...DONE! (0, <scrubbed duration>)
@@ -1126,11 +1126,11 @@ class TestFileSystemValidate(object):
 
                   Extracting files...
                     Discovering files...
-                      Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                      Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
                     {hash_header}
-                      Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                      Processing (9 items)...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Organizing results...DONE! (0, <scrubbed duration>)
@@ -1209,11 +1209,11 @@ class TestFileSystemValidate(object):
 
                   Extracting files...
                     Discovering files...
-                      Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                      Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
                     {hash_header}
-                      Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                      Processing (9 items)...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Organizing results...DONE! (0, <scrubbed duration>)
@@ -1266,11 +1266,11 @@ class TestFileSystemValidate(object):
 
                   Extracting files...
                     Discovering files...
-                      Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                      Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 10 files found, 2 empty directories found)
 
                     {hash_header}
-                      Processing 10 items...DONE! (0, <scrubbed duration>, 10 items succeeded, no items with errors, no items with warnings)
+                      Processing (10 items)...DONE! (0, <scrubbed duration>, 10 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Organizing results...DONE! (0, <scrubbed duration>)
@@ -1322,11 +1322,11 @@ class TestFileSystemValidate(object):
 
                   Extracting files...
                     Discovering files...
-                      Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                      Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 7 files found, 1 empty directory found)
 
                     {hash_header}
-                      Processing 7 items...DONE! (0, <scrubbed duration>, 7 items succeeded, no items with errors, no items with warnings)
+                      Processing (7 items)...DONE! (0, <scrubbed duration>, 7 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Organizing results...DONE! (0, <scrubbed duration>)
