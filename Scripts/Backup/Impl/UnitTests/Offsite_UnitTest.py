@@ -452,11 +452,11 @@ class TestBackup(object):
                 Heading...
                   Creating the local snapshot...
                     Discovering files...
-                      Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                      Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
                     Calculating hashes...
-                      Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                      Processing (9 items)...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Organizing results...DONE! (0, <scrubbed duration>)
@@ -468,7 +468,7 @@ class TestBackup(object):
                     Validating size requirements...DONE! (0, <scrubbed duration>, <scrubbed space required>, <scrubbed space available>)
 
                     Preserving files...
-                      Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                      Processing (9 items)...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Preserving index...DONE! (0, <scrubbed duration>)
@@ -550,11 +550,11 @@ class TestBackup(object):
                 Heading...
                   Creating the local snapshot...
                     Discovering files...
-                      Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                      Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>, 9 files found, 2 empty directories found)
 
                     Calculating hashes...
-                      Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                      Processing (9 items)...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                     DONE! (0, <scrubbed duration>)
 
                     Organizing results...DONE! (0, <scrubbed duration>)
@@ -702,11 +702,11 @@ class TestBackup(object):
                     Heading...
                       Creating the local snapshot...
                         Discovering files...
-                          Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                          Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>, 9 files found, 1 empty directory found)
 
                         Calculating hashes...
-                          Processing 9 items...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
+                          Processing (9 items)...DONE! (0, <scrubbed duration>, 9 items succeeded, no items with errors, no items with warnings)
                         DONE! (0, <scrubbed duration>)
 
                         Organizing results...DONE! (0, <scrubbed duration>)
@@ -907,7 +907,7 @@ class TestRestore(object):
                 """\
                 Heading...
                   Processing file content...
-                    Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                    Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     Staging working content...
                       Processing '<Folder0>' (1 of 1)...DONE! (0, <scrubbed duration>, 10 instructions added)
                     DONE! (0, <scrubbed duration>)
@@ -1031,7 +1031,7 @@ class TestRestore(object):
                 """\
                 Heading...
                   Processing file content...
-                    Processing 1 item...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
+                    Processing (1 item)...DONE! (0, <scrubbed duration>, 1 item succeeded, no items with errors, no items with warnings)
                     Staging working content...
                       Processing '<Folder0>' (1 of 1)...DONE! (0, <scrubbed duration>, 10 instructions added)
                     DONE! (0, <scrubbed duration>)

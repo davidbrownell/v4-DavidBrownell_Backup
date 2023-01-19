@@ -807,7 +807,7 @@ class TestCopyLocalContent(object):
         assert sink == textwrap.dedent(
             """\
             Heading...
-              Processing 5 items...DONE! (0, <scrubbed duration>, 5 items succeeded, no items with errors, no items with warnings)
+              Processing (5 items)...DONE! (0, <scrubbed duration>, 5 items succeeded, no items with errors, no items with warnings)
             DONE! (0, <scrubbed duration>)
             """,
         )
