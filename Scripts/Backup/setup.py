@@ -25,13 +25,15 @@ from cx_Freeze import setup, Executable
 
 from Common_Foundation.ContextlibEx import ExitStack
 from Common_Foundation import PathEx
+from Common_Foundation.Shell.All import CurrentShell
+from Common_Foundation import SubprocessEx
 
 
 # ----------------------------------------------------------------------
 _this_dir                                   = Path(__file__).parent
-_repo_root                                  = _this_dir.parent.parent
-
 _name                                       = _this_dir.name
+
+_initial_year                               = 2022  # pylint: disable=invalid-name
 
 
 # ----------------------------------------------------------------------
@@ -41,15 +43,27 @@ with ExitStack(lambda: sys.path.pop(0)):
     from Backup import __main__ as Backup
 
 
-# Read version info from VERSION file
-with PathEx.EnsureFile(_repo_root / "VERSION").open() as f:
-    _version = f.read().strip()
-    assert _version
+# ----------------------------------------------------------------------
+def _GetVersion() -> str:
+    result = SubprocessEx.Run(
+        'AutoSemVer{ext} --no-branch-name --no-metadata --quiet'.format(
+            ext=CurrentShell.script_extensions[0],
+        ),
+        cwd=_this_dir,
+    )
 
+    assert result.returncode == 0, result.output
+    return result.output.strip()
+
+_version = _GetVersion()  # pylint: disable=invalid-name
+del _GetVersion
+
+
+# ----------------------------------------------------------------------
 # Create the year suffix
 _year = datetime.datetime.now().year
 
-if _year == 2022:
+if _year == _initial_year:
     _year_suffix = ""  # pylint: disable=invalid-name
 else:
     if _year < 2100:
@@ -74,7 +88,7 @@ setup(
                 copy at http://www.boost.org/LICENSE_1_0.txt.
                 """,
             ).format(
-                year="2022", # Formatted in this way as to not participate in updates via the UpdateCopyrights script
+                year=str(_initial_year),
                 year_suffix=_year_suffix,
             ),
             # icon=<icon_filename>

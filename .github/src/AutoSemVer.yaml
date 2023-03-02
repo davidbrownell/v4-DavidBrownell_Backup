@@ -1,0 +1,3 @@
+version_prefix: CI-v
+include_branch_name_when_necessary: false
+initial_version: 1.0.0
