@@ -46,7 +46,7 @@ with ExitStack(lambda: sys.path.pop(0)):
 # ----------------------------------------------------------------------
 def _GetVersion() -> str:
     result = SubprocessEx.Run(
-        'AutoSemVerTemp{ext} --no-metadata --style AllMetadata --quiet'.format(
+        'AutoSemVer{ext} --no-metadata --style AllMetadata --quiet'.format(
             ext=CurrentShell.script_extensions[0],
         ),
         cwd=_this_dir,
