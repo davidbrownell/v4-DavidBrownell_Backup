@@ -27,3 +27,13 @@ jobs:
     uses: davidbrownell/v4-DavidBrownell_Backup/.github/workflows/validate.yaml@CI-latest
     with:
       repo_branch: ${{ github.head_ref }}
+
+  _868e1570-c24c-42a0-b6b1-b44b2e3a37fc:
+    name: "Validate Pull Request (target: ${{ github.base_ref }})"
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate_pull_request.yaml@CI-latest
+    with:
+      job_name_prefix: DavidBrownell_Backup
+      repo_name: davidbrownell/v4-DavidBrownell_Backup
+      repo_branch: ${{ github.head_ref }}
+      os: ubuntu-latest
+      configuration: dev
