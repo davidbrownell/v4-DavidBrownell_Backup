@@ -37,7 +37,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
 
-    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-v1
     with:
       job_name_prefix: "DavidBrownell_Backup"
       repo_name: davidbrownell/v4-DavidBrownell_Backup
@@ -87,7 +87,7 @@ jobs:
   # ----------------------------------------------------------------------
   _<<< guid(os + "dev") >>>:
     name: "Build and Test: dev"
-    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-v1
     with:
       job_name_prefix: "DavidBrownell_Backup"
       repo_name: davidbrownell/v4-DavidBrownell_Backup
@@ -169,7 +169,7 @@ jobs:
       #
       - name: Unbundle Build Artifacts
         id: unbundle
-        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-latest
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-v1
         with:
           archive_prefix: ${{ steps.checkout_source.outputs.archive_prefix }}
           artifacts_path: Scripts/Backup/Build
