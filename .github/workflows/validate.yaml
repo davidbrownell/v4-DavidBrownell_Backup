@@ -53,7 +53,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
 
-    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-Common_Foundation/.github/workflows/callable_validate.yaml@CI-v1
     with:
       job_name_prefix: "DavidBrownell_Backup"
       repo_name: davidbrownell/v4-DavidBrownell_Backup
@@ -95,7 +95,7 @@ jobs:
   # ----------------------------------------------------------------------
   _6a56ba8d-20f7-415a-9e01-605735b79e62:
     name: "Build and Test: dev"
-    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-v1
     with:
       job_name_prefix: "DavidBrownell_Backup"
       repo_name: davidbrownell/v4-DavidBrownell_Backup
@@ -177,7 +177,7 @@ jobs:
       #
       - name: Unbundle Build Artifacts
         id: unbundle
-        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-latest
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-v1
         with:
           archive_prefix: ${{ steps.checkout_source.outputs.archive_prefix }}
           artifacts_path: Scripts/Backup/Build
@@ -198,7 +198,7 @@ jobs:
   # ----------------------------------------------------------------------
   _d982b959-22ee-442f-a8fc-2f3fea92c471:
     name: "Build and Test: dev"
-    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-v1
     with:
       job_name_prefix: "DavidBrownell_Backup"
       repo_name: davidbrownell/v4-DavidBrownell_Backup
@@ -280,7 +280,7 @@ jobs:
       #
       - name: Unbundle Build Artifacts
         id: unbundle
-        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-latest
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-v1
         with:
           archive_prefix: ${{ steps.checkout_source.outputs.archive_prefix }}
           artifacts_path: Scripts/Backup/Build
@@ -301,7 +301,7 @@ jobs:
   # ----------------------------------------------------------------------
   _a9f54139-9dcd-45b9-946e-902b19d7a85d:
     name: "Build and Test: dev"
-    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-latest
+    uses: davidbrownell/v4-Common_PythonDevelopment/.github/workflows/callable_validate.yaml@CI-v1
     with:
       job_name_prefix: "DavidBrownell_Backup"
       repo_name: davidbrownell/v4-DavidBrownell_Backup
@@ -383,7 +383,7 @@ jobs:
       #
       - name: Unbundle Build Artifacts
         id: unbundle
-        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-latest
+        uses: davidbrownell/v4-Common_Foundation/.github/actions/unbundle_builder_artifacts@CI-v1
         with:
           archive_prefix: ${{ steps.checkout_source.outputs.archive_prefix }}
           artifacts_path: Scripts/Backup/Build
@@ -396,4 +396,3 @@ jobs:
       - name: Run Test
         run: |
           python3 "${{ steps.checkout_source.outputs.repo_dir }}/Scripts/Backup/BinaryTests/Binary_BuildVerificationTest.py" "${{ steps.unbundle.outputs.artifacts_dir }}"
-
