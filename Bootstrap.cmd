@@ -38,7 +38,7 @@ shift /1
 
 if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_KEY%" NEQ "" (
     @echo.
-    @echo [31m[1mERROR:[0m ERROR: Please run this script for a standard ^(non-activated^) command prompt.
+    @echo [31m[1mERROR:[0m ERROR: Please run this script from a standard ^(non-activated^) command prompt.
     @echo [31m[1mERROR:[0m
     @echo.
 
